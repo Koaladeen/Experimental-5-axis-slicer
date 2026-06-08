@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5X SLICER — v0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #1e1e1e;
+    --panel:     #2a2a2a;
+    --panel2:    #333333;
+    --border:    #444;
+    --accent:    #00c8ff;
+    --accent2:   #ff6b35;
+    --text:      #d4d4d4;
+    --text-dim:  #888;
+    --green:     #4ec94e;
+    --yellow:    #f0c040;
+    --red:       #e05050;
+    --chunk0:    #4a9eff;
+    --chunk1:    #ff8c42;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── LEFT PANEL ── */
+  #left-panel {
+    width: 240px;
+    min-width: 240px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    z-index: 10;
+  }
+
+  .panel-header {
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel2);
+  }
+  .panel-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .section {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+  }
+  .section-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+    margin-bottom: 5px;
+  }
+  .btn:hover { background: #3a3a3a; border-color: #666; }
+  .btn.primary {
+    background: #004a6e;
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .btn.primary:hover { background: #005f8e; }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.danger:hover { background: #3a1a1a; }
+
+  label { display: block; color: var(--text-dim); font-size: 11px; margin-bottom: 3px; margin-top: 8px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=number] {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 4px 6px; border-radius: 3px; font-size: 12px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  input[type=number]:focus { outline: none; border-color: var(--accent); }
+
+  .val-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    float: right;
+  }
+
+  /* Plane list */
+  .plane-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .plane-item.selected { border-color: var(--accent); }
+  .plane-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .plane-name { flex: 1; font-size: 12px; }
+  .plane-del {
+    color: var(--red); cursor: pointer; font-size: 14px; line-height: 1;
+    padding: 0 3px;
+    opacity: 0.6;
+  }
+  .plane-del:hover { opacity: 1; }
+
+  /* Chunk legend */
+  .chunk-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .chunk-tag {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-family: 'Share Tech Mono', monospace;
+  }
+  .chunk-swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* Status bar */
+  #status-bar {
+    padding: 5px 12px;
+    background: var(--panel2);
+    border-top: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: auto;
+  }
+  #status-text { color: var(--green); }
+
+  /* ── VIEWPORT ── */
+  #viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  #canvas { display: block; }
+
+  /* Top bar */
+  #top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 36px;
+    background: rgba(30,30,30,0.92);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
+    z-index: 5;
+    backdrop-filter: blur(4px);
+  }
+  .top-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 3px;
+  }
+  .top-sep { color: var(--border); }
+  .mode-tag {
+    font-size: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+  .mode-tag.orbit { background: #003344; color: var(--accent); border: 1px solid var(--accent); }
+  .mode-tag.plane { background: #442200; color: var(--accent2); border: 1px solid var(--accent2); }
+
+  /* Overlay hint */
+  #hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text-dim);
+    pointer-events: none;
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Drop zone overlay */
+  #drop-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    border: 2px dashed var(--accent);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 20;
+  }
+  #drop-overlay.active { display: flex; }
+  .drop-icon { font-size: 48px; opacity: 0.5; }
+  .drop-text { font-family: 'Share Tech Mono', monospace; color: var(--accent); font-size: 14px; letter-spacing: 2px; }
+
+  /* Blend zone band */
+  .blend-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--yellow);
+    background: rgba(240,192,64,0.12);
+    border: 1px solid rgba(240,192,64,0.3);
+    border-radius: 2px;
+    padding: 1px 5px;
+    margin-left: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- LEFT PANEL -->
+<div id="left-panel">
+  <div class="panel-header">
+    <div class="panel-title">5X · SLICER</div>
+  </div>
+
+  <!-- MODEL -->
+  <div class="section">
+    <div class="section-label">Model</div>
+    <button class="btn primary" id="btn-load">⬆ Load STL</button>
+    <input type="file" id="file-input" accept=".stl" style="display:none">
+    <div id="model-info" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:4px;"></div>
+  </div>
+
+  <!-- SLICING PLANES -->
+  <div class="section">
+    <div class="section-label">Slicing Planes</div>
+    <div id="plane-list"></div>
+    <button class="btn" id="btn-add-plane" style="margin-top:4px;">＋ Add Plane</button>
+  </div>
+
+  <!-- SELECTED PLANE CONTROLS -->
+  <div class="section" id="plane-controls" style="display:none">
+    <div class="section-label">Selected Plane</div>
+
+    <label>Position Z <span class="val-display" id="val-pz">0</span></label>
+    <input type="range" id="sl-pz" min="-150" max="150" value="0" step="0.5">
+
+    <label>Tilt θ (B axis) <span class="val-display" id="val-tilt">0°</span></label>
+    <input type="range" id="sl-tilt" min="-60" max="60" value="0" step="1">
+
+    <label>Rotation φ (C axis) <span class="val-display" id="val-rot">0°</span></label>
+    <input type="range" id="sl-rot" min="-180" max="180" value="0" step="1">
+
+    <label style="margin-top:10px;color:var(--yellow)">Blend Zone ± <span class="val-display" id="val-blend" style="color:var(--yellow)">0 mm</span></label>
+    <input type="range" id="sl-blend" min="0" max="30" value="0" step="0.5">
+    <div style="font-size:10px;color:var(--text-dim);margin-top:3px;line-height:1.4">
+      Smoothly interpolates tilt across this band. 0 = hard index.
+    </div>
+  </div>
+
+  <!-- SLICER SETTINGS -->
+  <div class="section">
+    <div class="section-label">Slicer Settings</div>
+
+    <label>Layer Height (mm) <span class="val-display" id="val-lh">0.20</span></label>
+    <input type="range" id="sl-lh" min="0.05" max="0.5" value="0.2" step="0.05">
+
+    <label>Show Layers</label>
+    <input type="range" id="sl-show-layers" min="1" max="200" value="50" step="1">
+    <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim)" id="val-show-layers">up to 50</span>
+  </div>
+
+  <!-- SLICE -->
+  <div class="section">
+    <div class="section-label">Actions</div>
+    <button class="btn primary" id="btn-slice">▶ Slice Model</button>
+    <button class="btn" id="btn-clear-contours" style="margin-top:4px;">✕ Clear Contours</button>
+  </div>
+
+  <!-- CHUNKS LEGEND -->
+  <div class="section">
+    <div class="section-label">Chunks</div>
+    <div id="chunk-legend" class="chunk-legend"></div>
+  </div>
+
+  <div id="status-bar">
+    <span id="status-text">READY</span>
+  </div>
+</div>
+
+<!-- VIEWPORT -->
+<div id="viewport">
+  <div id="top-bar">
+    <span class="top-title">5X·SLICER</span>
+    <span class="top-sep">|</span>
+    <span class="mode-tag orbit" id="mode-tag">ORBIT</span>
+    <span style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim)" id="coord-display">X:0 Y:0 Z:0</span>
+  </div>
+  <canvas id="canvas"></canvas>
+  <div id="hint">Drop STL file or use Load button · Scroll=zoom · Drag=orbit · Right drag=pan</div>
+  <div id="drop-overlay">
+    <div class="drop-icon">⬆</div>
+    <div class="drop-text">DROP STL FILE</div>
+  </div>
+</div>
+
+<!-- THREE.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+//  5X SLICER — v0  (Three.js r128)
+//  Proof-of-concept: load STL, place cutting planes,
+//  visualise chunks with different colours, show layer contours
+// ═══════════════════════════════════════════════════════
+
+// ── Renderer / Scene ──────────────────────────────────
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setClearColor(0x1a1a1a);
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+camera.position.set(0, -180, 120);
+camera.up.set(0, 0, 1);
+camera.lookAt(0, 0, 0);
+
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+const dirL = new THREE.DirectionalLight(0xffffff, 0.8);
+dirL.position.set(80, -60, 120);
+scene.add(dirL);
+const dirL2 = new THREE.DirectionalLight(0x8080ff, 0.3);
+dirL2.position.set(-80, 80, 40);
+scene.add(dirL2);
+
+// Grid
+const grid = new THREE.GridHelper(200, 20, 0x333333, 0x2a2a2a);
+grid.rotation.x = Math.PI / 2;
+scene.add(grid);
+
+// Axes
+const axesMat = [0xff3333, 0x33ff33, 0x3399ff];
+['x','y','z'].forEach((ax, i) => {
+  const pts = [new THREE.Vector3(0,0,0), new THREE.Vector3(...[0,0,0].map((_,j)=>j===i?60:0))];
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({color:axesMat[i],depthTest:false}));
+  scene.add(line);
+});
+
+// ── Resize ─────────────────────────────────────────────
+function resize() {
+  const vp = document.getElementById('viewport');
+  const w = vp.clientWidth, h = vp.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(document.getElementById('viewport'));
+resize();
+
+// ── Orbit Controls (minimal) ───────────────────────────
+const orbitState = { down: false, rdown: false, lastX: 0, lastY: 0 };
+let spherical = { r: 250, theta: -0.4, phi: 1.0 };
+let target = new THREE.Vector3(0, 0, 30);
+
+function updateCamera() {
+  const x = target.x + spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+  const y = target.y - spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+  const z = target.z + spherical.r * Math.cos(spherical.phi);
+  camera.position.set(x, y, z);
+  camera.lookAt(target);
+}
+updateCamera();
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 0) { orbitState.down = true; }
+  if (e.button === 2) { orbitState.rdown = true; }
+  orbitState.lastX = e.clientX; orbitState.lastY = e.clientY;
+});
+window.addEventListener('mouseup', () => { orbitState.down = false; orbitState.rdown = false; });
+window.addEventListener('mousemove', e => {
+  const dx = e.clientX - orbitState.lastX;
+  const dy = e.clientY - orbitState.lastY;
+  orbitState.lastX = e.clientX; orbitState.lastY = e.clientY;
+  if (orbitState.down) {
+    spherical.theta -= dx * 0.007;
+    spherical.phi = Math.max(0.05, Math.min(Math.PI - 0.05, spherical.phi + dy * 0.007));
+    updateCamera();
+  }
+  if (orbitState.rdown) {
+    const right = new THREE.Vector3().crossVectors(
+      new THREE.Vector3().subVectors(target, camera.position).normalize(),
+      camera.up
+    ).normalize();
+    const up = camera.up.clone();
+    target.addScaledVector(right, -dx * 0.15);
+    target.addScaledVector(up, dy * 0.15);
+    updateCamera();
+  }
+});
+canvas.addEventListener('wheel', e => {
+  spherical.r = Math.max(20, Math.min(800, spherical.r + e.deltaY * 0.3));
+  updateCamera();
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// ── State ──────────────────────────────────────────────
+let loadedGeometry = null;     // raw BufferGeometry
+let modelMeshes = [];          // coloured chunk meshes
+let planeMeshes = [];          // visual plane helpers
+let contourLines = [];         // sliced contour lines
+let planes = [];               // [{id, pos, tiltDeg, rotDeg, mesh, color}]
+let selectedPlane = -1;
+let nextPlaneId = 1;
+
+const CHUNK_COLORS = [
+  0x2a7fff, 0xff6a20, 0x22cc88, 0xdd44cc,
+  0xffcc00, 0x44aaff, 0xff4466, 0x88dd00
+];
+const PLANE_COLORS_CSS = ['#4a9eff','#ff8c42','#4ecc88','#dd44cc','#ffcc00'];
+
+// ── STL Loader (binary + ASCII) ────────────────────────
+function parseSTL(buffer) {
+  const view = new DataView(buffer);
+  // Check binary
+  const numTris = view.getUint32(80, true);
+  if (80 + 4 + numTris * 50 === buffer.byteLength) {
+    return parseBinarySTL(buffer, numTris);
+  }
+  return parseASCIISTL(new TextDecoder().decode(buffer));
+}
+
+function parseBinarySTL(buffer, numTris) {
+  const verts = new Float32Array(numTris * 9);
+  const norms = new Float32Array(numTris * 9);
+  const view = new DataView(buffer);
+  let off = 84;
+  for (let i = 0; i < numTris; i++) {
+    const nx = view.getFloat32(off, true);
+    const ny = view.getFloat32(off+4, true);
+    const nz = view.getFloat32(off+8, true);
+    off += 12;
+    for (let v = 0; v < 3; v++) {
+      verts[i*9 + v*3]   = view.getFloat32(off, true);
+      verts[i*9 + v*3+1] = view.getFloat32(off+4, true);
+      verts[i*9 + v*3+2] = view.getFloat32(off+8, true);
+      norms[i*9 + v*3]   = nx;
+      norms[i*9 + v*3+1] = ny;
+      norms[i*9 + v*3+2] = nz;
+      off += 12;
+    }
+    off += 2; // attribute byte count
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(norms, 3));
+  return geo;
+}
+
+function parseASCIISTL(text) {
+  const verts = [];
+  const re = /vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)/g;
+  let m;
+  while ((m = re.exec(text))) {
+    verts.push(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts), 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// ── Load model ────────────────────────────────────────
+function loadSTL(buffer) {
+  // Clear old
+  modelMeshes.forEach(m => scene.remove(m));
+  modelMeshes = [];
+  clearContours();
+
+  const geo = parseSTL(buffer);
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox;
+  const center = new THREE.Vector3();
+  bb.getCenter(center);
+  geo.translate(-center.x, -center.y, -center.z + (bb.max.z - bb.min.z) / 2);
+  geo.computeBoundingBox();
+
+  loadedGeometry = geo;
+
+  const size = new THREE.Vector3();
+  geo.boundingBox.getSize(size);
+  document.getElementById('model-info').textContent =
+    `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm`;
+
+  // Fit camera
+  const maxDim = Math.max(size.x, size.y, size.z);
+  spherical.r = maxDim * 2.2;
+  target.set(0, 0, 0);
+  updateCamera();
+
+  // Update range slider extents for plane position
+  const zMin = geo.boundingBox.min.z;
+  const zMax = geo.boundingBox.max.z;
+  const pzSlider = document.getElementById('sl-pz');
+  pzSlider.min = zMin.toFixed(1);
+  pzSlider.max = zMax.toFixed(1);
+  pzSlider.value = ((zMin + zMax) / 2).toFixed(1);
+
+  // Also update layer height slider max based on model
+  document.getElementById('sl-show-layers').max = Math.ceil(size.z / 0.05);
+
+  rebuildChunkMeshes();
+  setStatus('Model loaded · ' + (loadedGeometry.attributes.position.count / 3 | 0) + ' triangles');
+}
+
+// ── Chunk visualisation ───────────────────────────────
+// For each chunk (region between consecutive planes), assign a colour.
+// We determine which chunk each triangle belongs to by testing
+// its centroid against the cutting planes.
+
+function getPlaneNormal(p) {
+  // Build plane normal from tilt (B) and rotation (C)
+  const tilt = THREE.MathUtils.degToRad(p.tiltDeg);
+  const rot  = THREE.MathUtils.degToRad(p.rotDeg);
+  // Normal starts as Z, tilted by tilt around X, then rotated by rot around Z
+  const n = new THREE.Vector3(
+    Math.sin(tilt) * Math.cos(rot),
+    Math.sin(tilt) * Math.sin(rot),
+    Math.cos(tilt)
+  );
+  return n;
+}
+
+function getPlaneConstant(p) {
+  const n = getPlaneNormal(p);
+  // Plane passes through (0, 0, p.pos)
+  // d = -(n · point)
+  return -(n.x * 0 + n.y * 0 + n.z * p.pos);
+}
+
+function classifyTriangle(positions, triIdx, sortedPlanes) {
+  // Return which chunk index (0..N) the triangle centroid falls in
+  const base = triIdx * 9;
+  const cx = (positions[base] + positions[base+3] + positions[base+6]) / 3;
+  const cy = (positions[base+1] + positions[base+4] + positions[base+7]) / 3;
+  const cz = (positions[base+2] + positions[base+5] + positions[base+8]) / 3;
+
+  for (let i = 0; i < sortedPlanes.length; i++) {
+    const p = sortedPlanes[i];
+    const n = getPlaneNormal(p);
+    const d = getPlaneConstant(p);
+    const dist = n.x * cx + n.y * cy + n.z * cz + d;
+    if (dist < 0) return i; // below this plane → chunk i
+  }
+  return sortedPlanes.length; // above all planes → last chunk
+}
+
+function rebuildChunkMeshes() {
+  modelMeshes.forEach(m => scene.remove(m));
+  modelMeshes = [];
+  updateChunkLegend();
+  if (!loadedGeometry) return;
+
+  // Sort planes by their Z intercept (simple sort so chunks are ordered)
+  const sorted = [...planes].sort((a, b) => a.pos - b.pos);
+  const numChunks = sorted.length + 1;
+
+  const positions = loadedGeometry.attributes.position.array;
+  const normals = loadedGeometry.attributes.normal
+    ? loadedGeometry.attributes.normal.array : null;
+  const numTris = positions.length / 9;
+
+  // Collect triangles per chunk
+  const chunkVerts = Array.from({length: numChunks}, () => []);
+  const chunkNorms = Array.from({length: numChunks}, () => []);
+
+  for (let t = 0; t < numTris; t++) {
+    const ci = classifyTriangle(positions, t, sorted);
+    const base = t * 9;
+    for (let k = 0; k < 9; k++) {
+      chunkVerts[ci].push(positions[base + k]);
+      if (normals) chunkNorms[ci].push(normals[base + k]);
+    }
+  }
+
+  for (let ci = 0; ci < numChunks; ci++) {
+    if (chunkVerts[ci].length === 0) continue;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(chunkVerts[ci]), 3));
+    if (chunkNorms[ci].length) {
+      geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(chunkNorms[ci]), 3));
+    } else {
+      geo.computeVertexNormals();
+    }
+    const color = CHUNK_COLORS[ci % CHUNK_COLORS.length];
+    const mat = new THREE.MeshPhongMaterial({
+      color,
+      transparent: true,
+      opacity: 0.82,
+      side: THREE.DoubleSide,
+      shininess: 40,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.userData.chunkIdx = ci;
+    scene.add(mesh);
+    modelMeshes.push(mesh);
+  }
+
+  updateChunkLegend();
+}
+
+function updateChunkLegend() {
+  const el = document.getElementById('chunk-legend');
+  const numChunks = planes.length + 1;
+  el.innerHTML = '';
+  for (let i = 0; i < numChunks; i++) {
+    const color = '#' + CHUNK_COLORS[i % CHUNK_COLORS.length].toString(16).padStart(6, '0');
+    el.innerHTML += `<div class="chunk-tag">
+      <div class="chunk-swatch" style="background:${color}"></div>
+      <span>Chunk ${i}</span>
+    </div>`;
+  }
+}
+
+// ── Plane visual helper ────────────────────────────────
+const PLANE_SIZE = 120;
+
+function buildPlaneMesh(p) {
+  const geo = new THREE.PlaneGeometry(PLANE_SIZE, PLANE_SIZE);
+  const color = parseInt(PLANE_COLORS_CSS[planes.length % PLANE_COLORS_CSS.length].replace('#',''), 16);
+  const mat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.18,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+
+  // Edge frame
+  const edges = new THREE.EdgesGeometry(geo);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color, opacity: 0.8, transparent: true }));
+  mesh.add(line);
+
+  updatePlaneMeshTransform(mesh, p);
+  scene.add(mesh);
+  return mesh;
+}
+
+// Build two translucent band slabs showing the blend zone on either side of a plane
+function buildBlendBands(p) {
+  if (!p.blendMm || p.blendMm <= 0) return [];
+  const meshes = [];
+  const color = parseInt(p.colorCSS.replace('#',''), 16);
+
+  [-1, 1].forEach(side => {
+    // A thin slab: PLANE_SIZE × PLANE_SIZE × blendMm, offset to one side
+    const geo = new THREE.BoxGeometry(PLANE_SIZE, PLANE_SIZE, p.blendMm);
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.08,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    // Position offset along Z by blendMm/2 on each side (in plane-local space)
+    // We apply the same rotation as the cutting plane then shift along its normal
+    const n = getPlaneNormal(p);
+    mesh.position.set(
+      n.x * side * p.blendMm * 0.5,
+      n.y * side * p.blendMm * 0.5,
+      p.pos + n.z * side * p.blendMm * 0.5
+    );
+    const tilt = THREE.MathUtils.degToRad(p.tiltDeg);
+    const rot  = THREE.MathUtils.degToRad(p.rotDeg);
+    mesh.rotation.set(0, 0, 0);
+    mesh.rotateZ(rot);
+    mesh.rotateX(-tilt);
+    scene.add(mesh);
+    meshes.push(mesh);
+  });
+  return meshes;
+}
+
+function updatePlaneMeshTransform(mesh, p) {
+  const tilt = THREE.MathUtils.degToRad(p.tiltDeg);
+  const rot  = THREE.MathUtils.degToRad(p.rotDeg);
+  mesh.position.set(0, 0, p.pos);
+  mesh.rotation.set(0, 0, 0);
+  // PlaneGeometry is in XY, normal is Z. We want the plane's normal to match getPlaneNormal.
+  // Tilt around X axis first, then rotate around Z
+  mesh.rotateZ(rot);
+  mesh.rotateX(-tilt);  // negative because we want normal to tilt "up"
+}
+
+// ── Plane CRUD ────────────────────────────────────────
+function addPlane() {
+  if (!loadedGeometry) { setStatus('Load a model first'); return; }
+  const bb = loadedGeometry.boundingBox;
+  const midZ = ((bb.min.z + bb.max.z) / 2).toFixed(1) * 1;
+
+  const colorCSS = PLANE_COLORS_CSS[planes.length % PLANE_COLORS_CSS.length];
+  const p = { id: nextPlaneId++, pos: midZ, tiltDeg: 0, rotDeg: 0, blendMm: 0, colorCSS };
+  p.mesh = buildPlaneMesh(p);
+  p.bandMeshes = buildBlendBands(p);
+  planes.push(p);
+  selectPlane(planes.length - 1);
+  rebuildChunkMeshes();
+  renderPlaneList();
+  setStatus(`Plane ${p.id} added`);
+}
+
+function deletePlane(idx) {
+  scene.remove(planes[idx].mesh);
+  if (planes[idx].bandMeshes) planes[idx].bandMeshes.forEach(m => scene.remove(m));
+  planes.splice(idx, 1);
+  if (selectedPlane >= planes.length) selectedPlane = planes.length - 1;
+  rebuildChunkMeshes();
+  renderPlaneList();
+  updatePlaneControls();
+  setStatus('Plane removed');
+}
+
+function selectPlane(idx) {
+  selectedPlane = idx;
+  renderPlaneList();
+  updatePlaneControls();
+}
+
+function renderPlaneList() {
+  const el = document.getElementById('plane-list');
+  el.innerHTML = '';
+  planes.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'plane-item' + (i === selectedPlane ? ' selected' : '');
+    div.innerHTML = `
+      <div class="plane-dot" style="background:${p.colorCSS}"></div>
+      <span class="plane-name">Plane ${p.id}</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim)">Z${p.pos.toFixed(1)}</span>
+      ${p.blendMm > 0 ? `<span class="blend-tag">±${p.blendMm.toFixed(0)}</span>` : ''}
+      <span class="plane-del" data-idx="${i}">✕</span>
+    `;
+    div.addEventListener('click', (e) => {
+      if (e.target.classList.contains('plane-del')) return;
+      selectPlane(i);
+    });
+    div.querySelector('.plane-del').addEventListener('click', () => deletePlane(i));
+    el.appendChild(div);
+  });
+}
+
+function updatePlaneControls() {
+  const el = document.getElementById('plane-controls');
+  if (selectedPlane < 0 || selectedPlane >= planes.length) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  const p = planes[selectedPlane];
+  document.getElementById('sl-pz').value = p.pos;
+  document.getElementById('val-pz').textContent = p.pos.toFixed(1);
+  document.getElementById('sl-tilt').value = p.tiltDeg;
+  document.getElementById('val-tilt').textContent = p.tiltDeg + '°';
+  document.getElementById('sl-rot').value = p.rotDeg;
+  document.getElementById('val-rot').textContent = p.rotDeg + '°';
+  document.getElementById('sl-blend').value = p.blendMm || 0;
+  document.getElementById('val-blend').textContent = (p.blendMm || 0).toFixed(1) + ' mm';
+}
+
+// Plane sliders
+['pz','tilt','rot'].forEach(key => {
+  document.getElementById('sl-' + key).addEventListener('input', function() {
+    if (selectedPlane < 0 || selectedPlane >= planes.length) return;
+    const p = planes[selectedPlane];
+    if (key === 'pz')   { p.pos = parseFloat(this.value); document.getElementById('val-pz').textContent = p.pos.toFixed(1); }
+    if (key === 'tilt') { p.tiltDeg = parseFloat(this.value); document.getElementById('val-tilt').textContent = p.tiltDeg + '°'; }
+    if (key === 'rot')  { p.rotDeg = parseFloat(this.value);  document.getElementById('val-rot').textContent = p.rotDeg + '°'; }
+    updatePlaneMeshTransform(p.mesh, p);
+    if (p.bandMeshes) p.bandMeshes.forEach(m => scene.remove(m));
+    p.bandMeshes = buildBlendBands(p);
+    rebuildChunkMeshes();
+    renderPlaneList();
+  });
+});
+
+document.getElementById('sl-blend').addEventListener('input', function() {
+  if (selectedPlane < 0 || selectedPlane >= planes.length) return;
+  const p = planes[selectedPlane];
+  p.blendMm = parseFloat(this.value);
+  document.getElementById('val-blend').textContent = p.blendMm.toFixed(1) + ' mm';
+  // Rebuild band visualisation
+  if (p.bandMeshes) p.bandMeshes.forEach(m => scene.remove(m));
+  p.bandMeshes = buildBlendBands(p);
+  renderPlaneList();
+});
+
+// ── SLICER ────────────────────────────────────────────
+// For each chunk: intersect the chunk geometry with parallel planes
+// in the chunk's slice direction, extract contour loops, draw as lines.
+
+function clearContours() {
+  contourLines.forEach(l => scene.remove(l));
+  contourLines = [];
+}
+
+function sliceModel() {
+  clearContours();
+  if (!loadedGeometry) { setStatus('Load a model first'); return; }
+
+  const layerHeight = parseFloat(document.getElementById('sl-lh').value);
+  const maxLayers = parseInt(document.getElementById('sl-show-layers').value);
+  const sorted = [...planes].sort((a, b) => a.pos - b.pos);
+  const numChunks = sorted.length + 1;
+
+  setStatus('Slicing…');
+
+  setTimeout(() => {
+    let totalContours = 0;
+    const positions = loadedGeometry.attributes.position.array;
+    const numTris = positions.length / 9;
+
+    for (let ci = 0; ci < numChunks; ci++) {
+      // This chunk's "home" normal — the direction it prints in away from the transition
+      const lowerPlane = ci > 0 ? sorted[ci - 1] : null;
+      const upperPlane = ci < sorted.length ? sorted[ci] : null;
+      const homeNormal = lowerPlane ? getPlaneNormal(lowerPlane) : new THREE.Vector3(0, 0, 1);
+
+      // Collect triangles for this chunk
+      const triVerts = [];
+      for (let t = 0; t < numTris; t++) {
+        if (classifyTriangle(positions, t, sorted) !== ci) continue;
+        const base = t * 9;
+        triVerts.push([
+          new THREE.Vector3(positions[base],   positions[base+1],   positions[base+2]),
+          new THREE.Vector3(positions[base+3], positions[base+4],   positions[base+5]),
+          new THREE.Vector3(positions[base+6], positions[base+7],   positions[base+8]),
+        ]);
+      }
+      if (triVerts.length === 0) continue;
+
+      // Bounding extent along home normal
+      let dMin = Infinity, dMax = -Infinity;
+      triVerts.forEach(tri => {
+        tri.forEach(v => {
+          const d = v.dot(homeNormal);
+          if (d < dMin) dMin = d;
+          if (d > dMax) dMax = d;
+        });
+      });
+
+      const color = CHUNK_COLORS[ci % CHUNK_COLORS.length];
+
+      // Blend zone info for UPPER boundary of this chunk (transition into next chunk)
+      // When approaching the upper plane, we interpolate toward the upper chunk's normal
+      const upperBlend = upperPlane ? upperPlane.blendMm || 0 : 0;
+      const upperNormal = upperPlane ? getPlaneNormal(upperPlane) : null;
+      // The upper plane's position projected onto homeNormal
+      const upperDPos = upperPlane ? upperPlane.pos : Infinity;
+
+      // Blend zone for LOWER boundary (coming from previous chunk)
+      const lowerBlend = lowerPlane ? lowerPlane.blendMm || 0 : 0;
+      const lowerNormal = lowerPlane ? (ci > 1 ? getPlaneNormal(sorted[ci-2]) : new THREE.Vector3(0,0,1)) : null;
+      const lowerDPos = lowerPlane ? lowerPlane.pos : -Infinity;
+
+      let layerCount = 0;
+
+      for (let d = dMin + layerHeight; d <= dMax; d += layerHeight) {
+        if (layerCount++ > maxLayers) break;
+
+        // Determine the interpolated normal for this layer
+        let layerNormal = homeNormal.clone();
+
+        // Upper blend: as d approaches upperDPos from below, lerp toward upperNormal
+        if (upperNormal && upperBlend > 0) {
+          const distToUpper = upperDPos - d;
+          if (distToUpper < upperBlend && distToUpper >= 0) {
+            const t = 1 - (distToUpper / upperBlend); // 0 at blend start, 1 at plane
+            const tSmooth = t * t * (3 - 2 * t); // smoothstep
+            layerNormal = new THREE.Vector3().lerpVectors(homeNormal, upperNormal, tSmooth).normalize();
+          }
+        }
+
+        // Lower blend: as d is near lowerDPos from above, lerp back from lowerNormal
+        if (lowerNormal && lowerBlend > 0) {
+          const distFromLower = d - lowerDPos;
+          if (distFromLower < lowerBlend && distFromLower >= 0) {
+            const t = distFromLower / lowerBlend; // 0 at plane, 1 at blend end
+            const tSmooth = t * t * (3 - 2 * t);
+            layerNormal = new THREE.Vector3().lerpVectors(lowerNormal, homeNormal, tSmooth).normalize();
+          }
+        }
+
+        // Intersect triangles with the (possibly tilted) layer plane at distance d
+        // along the layer normal — plane equation: layerNormal · x = d_adj
+        // We re-project d from homeNormal space to layerNormal space via the layer centroid
+        // Simple approach: use d directly since normals are close and this is a visual tool
+        const segments = intersectMeshWithPlane(triVerts, layerNormal, d);
+        if (segments.length === 0) continue;
+
+        const pts = [];
+        segments.forEach(seg => { pts.push(seg[0], seg[1]); });
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+
+        // Colour: in blend zone shift toward yellow to make transition visible
+        let lineColor = color;
+        const inUpperBlend = upperNormal && upperBlend > 0 && (upperDPos - d) < upperBlend && (upperDPos - d) >= 0;
+        const inLowerBlend = lowerNormal && lowerBlend > 0 && (d - lowerDPos) < lowerBlend && (d - lowerDPos) >= 0;
+        if (inUpperBlend || inLowerBlend) lineColor = 0xf0c040; // yellow = transition zone
+
+        const mat = new THREE.LineBasicMaterial({ color: lineColor, transparent: true, opacity: 0.9 });
+        const line = new THREE.LineSegments(geo, mat);
+        scene.add(line);
+        contourLines.push(line);
+        totalContours++;
+      }
+    }
+
+    setStatus(`Sliced · ${totalContours} layers · yellow = blend zones`);
+  }, 10);
+}
+
+// Intersect a set of triangles with plane n·x = d
+// Returns array of [Vector3, Vector3] segments
+function intersectMeshWithPlane(triVerts, n, d) {
+  const segments = [];
+  triVerts.forEach(([a, b, c]) => {
+    const da = a.dot(n) - d;
+    const db = b.dot(n) - d;
+    const dc = c.dot(n) - d;
+    const pts = [];
+    if (Math.sign(da) !== Math.sign(db) || da === 0) {
+      const t = da / (da - db);
+      if (isFinite(t) && t >= 0 && t <= 1) {
+        pts.push(new THREE.Vector3().lerpVectors(a, b, t));
+      }
+    }
+    if (Math.sign(db) !== Math.sign(dc) || db === 0) {
+      const t = db / (db - dc);
+      if (isFinite(t) && t >= 0 && t <= 1) {
+        pts.push(new THREE.Vector3().lerpVectors(b, c, t));
+      }
+    }
+    if (Math.sign(dc) !== Math.sign(da) || dc === 0) {
+      const t = dc / (dc - da);
+      if (isFinite(t) && t >= 0 && t <= 1) {
+        pts.push(new THREE.Vector3().lerpVectors(c, a, t));
+      }
+    }
+    if (pts.length >= 2) {
+      segments.push([pts[0], pts[1]]);
+    }
+  });
+  return segments;
+}
+
+// ── UI Wiring ─────────────────────────────────────────
+document.getElementById('btn-load').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  setStatus('Loading…');
+  const reader = new FileReader();
+  reader.onload = e => loadSTL(e.target.result);
+  reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('btn-add-plane').addEventListener('click', addPlane);
+document.getElementById('btn-slice').addEventListener('click', sliceModel);
+document.getElementById('btn-clear-contours').addEventListener('click', () => {
+  clearContours();
+  setStatus('Contours cleared');
+});
+
+// Layer height display
+document.getElementById('sl-lh').addEventListener('input', function() {
+  document.getElementById('val-lh').textContent = parseFloat(this.value).toFixed(2);
+});
+document.getElementById('sl-show-layers').addEventListener('input', function() {
+  document.getElementById('val-show-layers').textContent = 'up to ' + this.value;
+});
+
+// Drag & drop
+const dropOverlay = document.getElementById('drop-overlay');
+const viewport = document.getElementById('viewport');
+viewport.addEventListener('dragover', e => { e.preventDefault(); dropOverlay.classList.add('active'); });
+viewport.addEventListener('dragleave', () => dropOverlay.classList.remove('active'));
+viewport.addEventListener('drop', e => {
+  e.preventDefault();
+  dropOverlay.classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.stl')) {
+    setStatus('Loading…');
+    const reader = new FileReader();
+    reader.onload = ev => loadSTL(ev.target.result);
+    reader.readAsArrayBuffer(file);
+  }
+});
+
+function setStatus(msg) {
+  document.getElementById('status-text').textContent = msg;
+}
+
+// ── Render loop ───────────────────────────────────────
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+
+// ── Default: load a demo shape ────────────────────────
+// Generate a simple bent-cylinder STL in memory to show something on load
+function generateDemoCylinderSTL() {
+  // Simple torus-like blob via sphere + cylinder
+  const verts = [];
+  const addTri = (ax,ay,az, bx,by,bz, cx,cy,cz) => {
+    verts.push(ax,ay,az, bx,by,bz, cx,cy,cz);
+  };
+
+  // Build a basic "L-shaped" solid from triangles
+  // Column 1: vertical cylinder approximation
+  const segs = 16;
+  const r = 12, h1 = 60, h2 = 40, r2 = 10;
+
+  // Vertical cylinder  (Z: 0 to h1)
+  for (let i = 0; i < segs; i++) {
+    const a0 = (i / segs) * Math.PI * 2;
+    const a1 = ((i+1) / segs) * Math.PI * 2;
+    const x0 = Math.cos(a0) * r, y0 = Math.sin(a0) * r;
+    const x1 = Math.cos(a1) * r, y1 = Math.sin(a1) * r;
+    // Side quad → 2 tris
+    addTri(x0,y0,0,   x1,y1,0,   x0,y0,h1);
+    addTri(x1,y1,0,   x1,y1,h1,  x0,y0,h1);
+    // Top cap
+    addTri(0,0,h1, x0,y0,h1, x1,y1,h1);
+    // Bottom cap
+    addTri(0,0,0, x1,y1,0, x0,y0,0);
+  }
+
+  // Horizontal arm (Y: 0 to h2, at top)
+  const topZ = h1, botZ = h1 - r2*2;
+  for (let i = 0; i < segs; i++) {
+    const a0 = (i / segs) * Math.PI * 2;
+    const a1 = ((i+1) / segs) * Math.PI * 2;
+    const z0 = Math.cos(a0) * r2 + topZ - r2;
+    const z1 = Math.cos(a1) * r2 + topZ - r2;
+    const x0 = Math.sin(a0) * r2, x1 = Math.sin(a1) * r2;
+    // Y direction cylinder  (Y: 0 to h2)
+    addTri(x0,0,z0,  x0,h2,z0, x1,0,z1);
+    addTri(x1,0,z1,  x0,h2,z0, x1,h2,z1);
+    // Caps
+    addTri(0,0,topZ-r2, x0,0,z0, x1,0,z1);
+    addTri(0,h2,topZ-r2, x1,h2,z1, x0,h2,z0);
+  }
+
+  // Build binary STL in memory
+  const numTris = verts.length / 9;
+  const buf = new ArrayBuffer(84 + numTris * 50);
+  const view = new DataView(buf);
+  // Header
+  view.setUint32(80, numTris, true);
+  let off = 84;
+  for (let t = 0; t < numTris; t++) {
+    const b = t * 9;
+    // Normal (0,0,0 — will be computed)
+    view.setFloat32(off, 0, true); view.setFloat32(off+4, 0, true); view.setFloat32(off+8, 0, true);
+    off += 12;
+    for (let v = 0; v < 3; v++) {
+      view.setFloat32(off,   verts[b + v*3],   true);
+      view.setFloat32(off+4, verts[b + v*3+1], true);
+      view.setFloat32(off+8, verts[b + v*3+2], true);
+      off += 12;
+    }
+    view.setUint16(off, 0, true); off += 2;
+  }
+  return buf;
+}
+
+// Load demo on start
+loadSTL(generateDemoCylinderSTL());
+setStatus('Demo model loaded · Drop your STL to begin');
+</script>
+</body>
+</html>
