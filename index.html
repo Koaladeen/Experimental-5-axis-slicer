@@ -32,6 +32,12 @@
     --red:    #b82020;
     --amber:  #a06010;
 
+    --ax-x: #c82020;
+    --ax-y: #187818;
+    --ax-z: #1858b8;
+    --ax-b: #b06010;
+    --ax-c: #7030a8;
+
     --mono: 'JetBrains Mono', monospace;
     --sans: 'Inter', sans-serif;
   }
@@ -200,6 +206,87 @@
   #drop-overlay.active { display: flex; }
   .drop-icon { font-size: 40px; opacity: 0.5; }
   .drop-text { font-family: var(--mono); font-size: 13px; color: var(--accent); letter-spacing: 0.15em; font-weight: 700; }
+
+  /* ── Machine config overlay ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--ui-bg0); border: 1px solid var(--border-hi);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+    width: min(900px, 96vw); max-height: 90vh;
+    display: flex; flex-direction: column;
+  }
+  .modal-head {
+    background: var(--ui-bg1); border-bottom: 2px solid var(--border-hi);
+    display: flex; align-items: center; flex-shrink: 0; height: 44px;
+  }
+  .modal-head .logo-block { height: 44px; font-size: 12px; padding: 0 24px 0 14px; }
+  .modal-head-title {
+    font-family: var(--mono); font-size: 11px; color: var(--text1);
+    letter-spacing: 0.1em; padding: 0 16px;
+  }
+  .modal-close {
+    margin-left: auto; background: transparent; border: none;
+    color: var(--text2); font-size: 20px; cursor: pointer;
+    padding: 0 16px; height: 44px; display: flex; align-items: center;
+    transition: color 0.1s;
+  }
+  .modal-close:hover { color: var(--red); }
+  .modal-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-footer {
+    background: var(--ui-bg1); border-top: 1px solid var(--border);
+    padding: 8px 14px; display: flex; gap: 8px; align-items: center; flex-shrink: 0;
+  }
+  .mc-section { border: 1px solid var(--border); }
+  .mc-section-head {
+    background: var(--ui-bg1); border-bottom: 1px solid var(--border);
+    padding: 5px 10px; font-family: var(--mono); font-size: 10px;
+    color: var(--text2); letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 600; display: flex; align-items: center; justify-content: space-between;
+  }
+  .mc-section-body { padding: 10px; }
+  .parts-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+  .parts-table th {
+    background: var(--ui-bg2); border: 1px solid var(--border);
+    padding: 4px 8px; text-align: left; color: var(--text2);
+    font-weight: 600; letter-spacing: 0.08em; font-size: 10px;
+  }
+  .parts-table td { border: 1px solid var(--border-lt); padding: 3px 4px; background: var(--ui-bg0); }
+  .parts-table tr:hover td { background: var(--ui-bg4); }
+  .s-input {
+    background: #fff; border: 1px solid var(--border);
+    color: var(--text0); font-family: var(--mono); font-size: 11px;
+    padding: 3px 5px; width: 100%; border-radius: 0; box-sizing: border-box;
+  }
+  .s-input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  .s-cb { width: auto !important; cursor: pointer; }
+  .mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mc-field { display: flex; flex-direction: column; gap: 3px; }
+  .mc-label { font-family: var(--mono); font-size: 10px; color: var(--text2); letter-spacing: 0.08em; }
+  .rot-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; margin-top: 6px; }
+  .rot-table th {
+    background: var(--ui-bg2); border: 1px solid var(--border);
+    padding: 3px 6px; text-align: left; color: var(--text2); font-size: 10px;
+    font-weight: 600; letter-spacing: 0.08em;
+  }
+  .rot-table td { border: 1px solid var(--border-lt); padding: 3px 4px; background: var(--ui-bg0); }
+  .row-btn {
+    background: var(--ui-bg1); border: 1px solid var(--border);
+    color: var(--text1); font-family: var(--mono); font-size: 10px;
+    padding: 3px 8px; cursor: pointer; border-radius: 2px; transition: background 0.1s; white-space: nowrap;
+  }
+  .row-btn:hover { background: var(--ui-bg3); }
+  .row-btn.del { color: var(--red); }
+  .row-btn.del:hover { background: rgba(184,32,32,0.08); }
+  #machine-badge {
+    font-family: var(--mono); font-size: 10px; color: var(--text2);
+    padding: 0 10px; display: flex; align-items: center; gap: 5px;
+  }
+  #machine-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 </style>
 </head>
 <body>
@@ -219,7 +306,11 @@
     <button class="tb-btn primary" id="btn-slice">▶ Slice</button>
     <button class="tb-btn danger" id="btn-clear-contours">✕ Clear</button>
   </div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btn-machine">⚙ Machine</button>
+  </div>
   <div class="tb-spacer"></div>
+  <div id="machine-badge" style="display:none"><div class="dot"></div><span id="machine-badge-name">DEFAULT</span></div>
   <div id="tb-status">READY</div>
   <div id="model-info" style="font-family:var(--mono);font-size:11px;color:var(--text2);padding:0 14px;"></div>
 </div>
@@ -293,6 +384,129 @@
 
 </div><!-- #body -->
 </div><!-- #app -->
+
+<!-- MACHINE CONFIG OVERLAY -->
+<div class="modal-overlay" id="machine-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="logo-block">5X<span>·SLICER</span></div>
+      <span class="modal-head-title">MACHINE CONFIGURATION</span>
+      <button class="modal-close" id="machine-overlay-close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- KINEMATIC PARTS -->
+      <div class="mc-section">
+        <div class="mc-section-head">
+          <span>Kinematic Parts</span>
+          <button class="row-btn" id="mc-add-part">＋ Add Part</button>
+        </div>
+        <div class="mc-section-body" style="overflow-x:auto">
+          <table class="parts-table">
+            <thead>
+              <tr>
+                <th style="width:90px">Name</th>
+                <th style="width:90px">Parent</th>
+                <th style="width:72px">Type</th>
+                <th style="width:72px">G-code</th>
+                <th style="width:80px">Three.js Axis</th>
+                <th style="width:48px">Invert</th>
+                <th style="width:60px">Bed Side</th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody id="mc-parts-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BED / TOOL + BED ROT AXES -->
+      <div class="mc-grid">
+        <div class="mc-section">
+          <div class="mc-section-head">Bed &amp; Tool Assignment</div>
+          <div class="mc-section-body">
+            <div class="mc-field" style="margin-bottom:8px">
+              <span class="mc-label">Bed Part (bedPart)</span>
+              <select class="s-input" id="mc-bed-part"></select>
+            </div>
+            <div class="mc-field">
+              <span class="mc-label">Tool Part (toolPart)</span>
+              <select class="s-input" id="mc-tool-part"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-section-head">
+            <span>Bed Rotation Axes (bedRotAxes)</span>
+            <button class="row-btn" id="mc-add-rotax">＋</button>
+          </div>
+          <div class="mc-section-body">
+            <table class="rot-table">
+              <thead>
+                <tr>
+                  <th>G-code field</th>
+                  <th>Axis [x,y,z]</th>
+                  <th>Invert</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="mc-rotax-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AXIS LIMITS -->
+      <div class="mc-section">
+        <div class="mc-section-head">Axis Limits</div>
+        <div class="mc-section-body">
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+            ${['x','y','z','b','c'].map(ax => `
+            <div>
+              <div class="mc-label" style="color:var(--ax-${ax},var(--text2));margin-bottom:4px;font-weight:600">${ax.toUpperCase()}</div>
+              <div style="display:flex;gap:4px;align-items:center">
+                <span class="mc-label">min</span>
+                <input class="s-input" type="number" id="mc-lim-${ax}min" style="width:60px" value="${ax==='b'?-120:ax==='c'?-360:ax==='z'?0:-150}">
+                <span class="mc-label">max</span>
+                <input class="s-input" type="number" id="mc-lim-${ax}max" style="width:60px" value="${ax==='b'?32:ax==='c'?360:ax==='z'?90:150}">
+              </div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- PRINT SETTINGS -->
+      <div class="mc-section">
+        <div class="mc-section-head">Print Settings</div>
+        <div class="mc-section-body">
+          <div class="mc-grid">
+            <div class="mc-field">
+              <span class="mc-label">Nozzle Diameter (mm)</span>
+              <input class="s-input" type="number" id="mc-nozzle" value="0.4" step="0.1" min="0.1" style="width:90px">
+            </div>
+            <div class="mc-field">
+              <span class="mc-label">G-code Flavour</span>
+              <select class="s-input" id="mc-gcode-flavor" style="width:140px">
+                <option value="klipper">Klipper</option>
+                <option value="marlin">Marlin</option>
+                <option value="reprap">RepRap</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- .modal-body -->
+    <div class="modal-footer">
+      <input type="file" id="mc-import-file" accept=".json" style="display:none">
+      <button class="tb-btn" id="mc-import-btn">⬆ Load machine.json</button>
+      <button class="tb-btn primary" id="mc-export-btn">⬇ Save machine.json</button>
+      <button class="tb-btn" style="margin-left:auto" id="mc-reset-btn">↺ Reset to Default</button>
+      <button class="tb-btn primary" id="mc-apply-btn">✓ Apply</button>
+    </div>
+  </div>
+</div>
 
 <!-- THREE.JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1072,6 +1286,323 @@ function generateDemoCylinderSTL() {
   }
   return buf;
 }
+
+
+// ═══════════════════════════════════════════════════════
+//  MACHINE CONFIG
+// ═══════════════════════════════════════════════════════
+
+const DEFAULT_KINEMATICS = {
+  _version: 1,
+  kinematics: {
+    parts: [
+      { name:'Frame', parent:null,    type:'static',  gcode:null,  threeAxis:[0,1,0],  invert:false, bedSide:true  },
+      { name:'Z',     parent:'Frame', type:'linear',  gcode:'mz',  threeAxis:[0,1,0],  invert:true,  bedSide:true  },
+      { name:'B',     parent:'Z',     type:'rotary',  gcode:'mb',  threeAxis:[0,0,-1], invert:false, bedSide:true  },
+      { name:'C',     parent:'B',     type:'rotary',  gcode:'mc',  threeAxis:[0,1,0],  invert:false, bedSide:true  },
+      { name:'Y',     parent:'Frame', type:'linear',  gcode:'my',  threeAxis:[0,0,-1], invert:false, bedSide:false },
+      { name:'X',     parent:'Y',     type:'linear',  gcode:'mx',  threeAxis:[1,0,0],  invert:false, bedSide:false },
+    ],
+    bedPart:  'C',
+    toolPart: 'X',
+    bedRotAxes: [
+      { gcode:'mb', axis:[0,0,-1], invert:false },
+      { gcode:'mc', axis:[0,1,0],  invert:false },
+    ],
+  },
+  limits: {
+    x: { min:-150, max:150 },
+    y: { min:-150, max:150 },
+    z: { min:0,    max:90  },
+    b: { min:-120, max:32  },
+    c: { min:-360, max:360 },
+  },
+  nozzleDiameter: 0.4,
+  gcodeFlavor: 'klipper',
+};
+
+// Active config — deep copy of default
+let machineConfig = JSON.parse(JSON.stringify(DEFAULT_KINEMATICS));
+
+// ── Collect config from overlay UI ────────────────────
+function collectMachineConfig() {
+  const cfg = JSON.parse(JSON.stringify(machineConfig)); // start from current
+
+  // Parts are already live-edited into machineConfig.kinematics.parts
+  cfg.kinematics.bedPart  = document.getElementById('mc-bed-part').value;
+  cfg.kinematics.toolPart = document.getElementById('mc-tool-part').value;
+
+  // Limits
+  ['x','y','z','b','c'].forEach(ax => {
+    cfg.limits[ax] = {
+      min: parseFloat(document.getElementById('mc-lim-'+ax+'min').value),
+      max: parseFloat(document.getElementById('mc-lim-'+ax+'max').value),
+    };
+  });
+
+  cfg.nozzleDiameter = parseFloat(document.getElementById('mc-nozzle').value) || 0.4;
+  cfg.gcodeFlavor    = document.getElementById('mc-gcode-flavor').value;
+
+  return cfg;
+}
+
+// ── Apply config to UI + slicer state ─────────────────
+function applyMachineConfig(cfg) {
+  if (!cfg || cfg._version !== 1) { alert('Invalid or incompatible machine.json (expected _version: 1)'); return; }
+  machineConfig = JSON.parse(JSON.stringify(cfg));
+
+  // Sync overlay UI fields
+  renderPartsTable();
+  renderRotAxesTable();
+  syncPartSelects();
+
+  ['x','y','z','b','c'].forEach(ax => {
+    const lim = (cfg.limits || {})[ax] || {};
+    const minEl = document.getElementById('mc-lim-'+ax+'min');
+    const maxEl = document.getElementById('mc-lim-'+ax+'max');
+    if (minEl) minEl.value = lim.min ?? '';
+    if (maxEl) maxEl.value = lim.max ?? '';
+  });
+
+  const nzEl = document.getElementById('mc-nozzle');
+  if (nzEl) nzEl.value = cfg.nozzleDiameter || 0.4;
+
+  const flEl = document.getElementById('mc-gcode-flavor');
+  if (flEl) flEl.value = cfg.gcodeFlavor || 'klipper';
+
+  // Update slicer: clamp B tilt slider to new limits
+  const bLim = (cfg.limits || {}).b || { min:-120, max:32 };
+  document.getElementById('sl-tilt').min = bLim.min;
+  document.getElementById('sl-tilt').max = bLim.max;
+
+  // Show badge
+  document.getElementById('machine-badge').style.display = 'flex';
+  document.getElementById('machine-badge-name').textContent =
+    cfg.name || 'CUSTOM';
+
+  setStatus('Machine config applied');
+}
+
+// ── Render parts table ─────────────────────────────────
+function renderPartsTable() {
+  const tbody = document.getElementById('mc-parts-body');
+  if (!tbody) return;
+  const parts = machineConfig.kinematics.parts;
+  const partNames = parts.map(p => p.name);
+
+  const GCODE_OPTS = ['','mx','my','mz','mb','mc'];
+  const AXIS_OPTS  = [
+    { v:'1,0,0', l:'+X' }, { v:'-1,0,0', l:'-X' },
+    { v:'0,1,0', l:'+Y' }, { v:'0,-1,0', l:'-Y' },
+    { v:'0,0,1', l:'+Z' }, { v:'0,0,-1', l:'-Z' },
+  ];
+
+  tbody.innerHTML = parts.map((p, i) => {
+    const parentOpts = ['(root)', ...partNames.filter(n => n !== p.name)]
+      .map(n => `<option value="${n === '(root)' ? '' : n}" ${(p.parent||'') === (n==='(root)'?'':n) ? 'selected':''}>${n}</option>`).join('');
+    const typeOpts = ['static','linear','rotary']
+      .map(t => `<option value="${t}" ${p.type===t?'selected':''}>${t}</option>`).join('');
+    const gcodeOpts = GCODE_OPTS
+      .map(v => `<option value="${v}" ${(p.gcode||'')===v?'selected':''}>${v||'(none)'}</option>`).join('');
+    const axVal = (p.threeAxis||[1,0,0]).join(',');
+    const axOpts = AXIS_OPTS
+      .map(a => `<option value="${a.v}" ${axVal===a.v?'selected':''}>${a.l}</option>`).join('');
+
+    return `<tr data-pi="${i}">
+      <td><input class="s-input mc-part-name" data-pi="${i}" value="${p.name}"></td>
+      <td><select class="s-input mc-part-parent" data-pi="${i}">${parentOpts}</select></td>
+      <td><select class="s-input mc-part-type" data-pi="${i}">${typeOpts}</select></td>
+      <td><select class="s-input mc-part-gcode" data-pi="${i}">${gcodeOpts}</select></td>
+      <td><select class="s-input mc-part-axis" data-pi="${i}">${axOpts}</select></td>
+      <td style="text-align:center"><input type="checkbox" class="s-cb mc-part-invert" data-pi="${i}" ${p.invert?'checked':''}></td>
+      <td style="text-align:center"><input type="checkbox" class="s-cb mc-part-bedside" data-pi="${i}" ${p.bedSide?'checked':''}></td>
+      <td><button class="row-btn del mc-del-part" data-pi="${i}">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  // Wire events
+  tbody.querySelectorAll('.mc-part-name').forEach(el => el.addEventListener('input', e => {
+    machineConfig.kinematics.parts[+e.target.dataset.pi].name = e.target.value;
+    syncPartSelects();
+  }));
+  tbody.querySelectorAll('.mc-part-parent').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.parts[+e.target.dataset.pi].parent = e.target.value || null;
+  }));
+  tbody.querySelectorAll('.mc-part-type').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.parts[+e.target.dataset.pi].type = e.target.value;
+  }));
+  tbody.querySelectorAll('.mc-part-gcode').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.parts[+e.target.dataset.pi].gcode = e.target.value || null;
+  }));
+  tbody.querySelectorAll('.mc-part-axis').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.parts[+e.target.dataset.pi].threeAxis = e.target.value.split(',').map(Number);
+  }));
+  tbody.querySelectorAll('.mc-part-invert').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.parts[+e.target.dataset.pi].invert = e.target.checked;
+  }));
+  tbody.querySelectorAll('.mc-part-bedside').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.parts[+e.target.dataset.pi].bedSide = e.target.checked;
+  }));
+  tbody.querySelectorAll('.mc-del-part').forEach(el => el.addEventListener('click', e => {
+    machineConfig.kinematics.parts.splice(+e.target.dataset.pi, 1);
+    renderPartsTable();
+    syncPartSelects();
+  }));
+}
+
+// ── Render bedRotAxes table ────────────────────────────
+function renderRotAxesTable() {
+  const tbody = document.getElementById('mc-rotax-body');
+  if (!tbody) return;
+  const axes = machineConfig.kinematics.bedRotAxes || [];
+  const GCODE_OPTS = ['mx','my','mz','mb','mc'];
+  const AXIS_OPTS  = [
+    { v:'1,0,0', l:'+X' }, { v:'-1,0,0', l:'-X' },
+    { v:'0,1,0', l:'+Y' }, { v:'0,-1,0', l:'-Y' },
+    { v:'0,0,1', l:'+Z' }, { v:'0,0,-1', l:'-Z' },
+  ];
+
+  tbody.innerHTML = axes.map((a, i) => {
+    const gcodeOpts = GCODE_OPTS.map(v =>
+      `<option value="${v}" ${a.gcode===v?'selected':''}>${v}</option>`).join('');
+    const axVal = (a.axis||[0,1,0]).join(',');
+    const axOpts = AXIS_OPTS.map(o =>
+      `<option value="${o.v}" ${axVal===o.v?'selected':''}>${o.l}</option>`).join('');
+    return `<tr>
+      <td><select class="s-input mc-ra-gcode" data-ri="${i}">${gcodeOpts}</select></td>
+      <td><select class="s-input mc-ra-axis" data-ri="${i}">${axOpts}</select></td>
+      <td style="text-align:center"><input type="checkbox" class="s-cb mc-ra-invert" data-ri="${i}" ${a.invert?'checked':''}></td>
+      <td><button class="row-btn del mc-del-ra" data-ri="${i}">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.mc-ra-gcode').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.bedRotAxes[+e.target.dataset.ri].gcode = e.target.value;
+  }));
+  tbody.querySelectorAll('.mc-ra-axis').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.bedRotAxes[+e.target.dataset.ri].axis = e.target.value.split(',').map(Number);
+  }));
+  tbody.querySelectorAll('.mc-ra-invert').forEach(el => el.addEventListener('change', e => {
+    machineConfig.kinematics.bedRotAxes[+e.target.dataset.ri].invert = e.target.checked;
+  }));
+  tbody.querySelectorAll('.mc-del-ra').forEach(el => el.addEventListener('click', e => {
+    machineConfig.kinematics.bedRotAxes.splice(+e.target.dataset.ri, 1);
+    renderRotAxesTable();
+  }));
+}
+
+// Sync bedPart / toolPart selects with current parts list
+function syncPartSelects() {
+  const parts = machineConfig.kinematics.parts.map(p => p.name);
+  ['mc-bed-part', 'mc-tool-part'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = parts.map(n => `<option value="${n}" ${n===cur?'selected':''}>${n}</option>`).join('');
+    if (!parts.includes(cur) && parts.length) sel.value = parts[parts.length - 1];
+  });
+  // Also ensure bedPart/toolPart from config is set
+  const bp = document.getElementById('mc-bed-part');
+  const tp = document.getElementById('mc-tool-part');
+  if (bp && parts.includes(machineConfig.kinematics.bedPart)) bp.value = machineConfig.kinematics.bedPart;
+  if (tp && parts.includes(machineConfig.kinematics.toolPart)) tp.value = machineConfig.kinematics.toolPart;
+}
+
+// ── Open overlay ───────────────────────────────────────
+function openMachineOverlay() {
+  renderPartsTable();
+  renderRotAxesTable();
+  syncPartSelects();
+  // Sync limits
+  ['x','y','z','b','c'].forEach(ax => {
+    const lim = (machineConfig.limits || {})[ax] || {};
+    const minEl = document.getElementById('mc-lim-'+ax+'min');
+    const maxEl = document.getElementById('mc-lim-'+ax+'max');
+    if (minEl) minEl.value = lim.min ?? '';
+    if (maxEl) maxEl.value = lim.max ?? '';
+  });
+  document.getElementById('mc-nozzle').value = machineConfig.nozzleDiameter || 0.4;
+  document.getElementById('mc-gcode-flavor').value = machineConfig.gcodeFlavor || 'klipper';
+  document.getElementById('machine-overlay').classList.add('open');
+}
+
+// ── Wiring ─────────────────────────────────────────────
+document.getElementById('btn-machine').addEventListener('click', openMachineOverlay);
+
+document.getElementById('machine-overlay-close').addEventListener('click', () => {
+  document.getElementById('machine-overlay').classList.remove('open');
+});
+document.getElementById('machine-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('machine-overlay'))
+    document.getElementById('machine-overlay').classList.remove('open');
+});
+
+document.getElementById('mc-apply-btn').addEventListener('click', () => {
+  machineConfig = collectMachineConfig();
+  applyMachineConfig(machineConfig);
+  document.getElementById('machine-overlay').classList.remove('open');
+});
+
+document.getElementById('mc-add-part').addEventListener('click', () => {
+  machineConfig.kinematics.parts.push({
+    name: 'Part' + (machineConfig.kinematics.parts.length + 1),
+    parent: null, type: 'static', gcode: null,
+    threeAxis: [0,1,0], invert: false, bedSide: false,
+  });
+  renderPartsTable();
+  syncPartSelects();
+});
+
+document.getElementById('mc-add-rotax').addEventListener('click', () => {
+  machineConfig.kinematics.bedRotAxes.push({ gcode:'mb', axis:[0,1,0], invert:false });
+  renderRotAxesTable();
+});
+
+document.getElementById('mc-reset-btn').addEventListener('click', () => {
+  if (confirm('Reset to default CoreXY-BC kinematics?')) {
+    machineConfig = JSON.parse(JSON.stringify(DEFAULT_KINEMATICS));
+    openMachineOverlay();
+    setStatus('Reset to default');
+  }
+});
+
+// Export machine.json
+document.getElementById('mc-export-btn').addEventListener('click', () => {
+  const cfg = collectMachineConfig();
+  cfg.name = cfg.name || 'My Machine';
+  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'machine.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  setStatus('machine.json saved');
+});
+
+// Import machine.json
+document.getElementById('mc-import-btn').addEventListener('click', () => {
+  document.getElementById('mc-import-file').click();
+});
+document.getElementById('mc-import-file').addEventListener('change', function() {
+  const file = this.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const cfg = JSON.parse(e.target.result);
+      applyMachineConfig(cfg);
+      openMachineOverlay(); // re-render with loaded values
+      setStatus('Loaded ' + (cfg.name || 'machine.json'));
+    } catch(err) {
+      alert('Failed to parse machine.json: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  this.value = '';
+});
+
+// Initialise with defaults on load
+applyMachineConfig(machineConfig);
+document.getElementById('machine-badge').style.display = 'none'; // hide until user loads/saves
 
 // Load demo on start
 loadSTL(generateDemoCylinderSTL());
