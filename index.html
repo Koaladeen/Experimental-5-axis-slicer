@@ -195,7 +195,208 @@
     pointer-events: none; text-align: right; line-height: 1.8;
   }
 
-  /* Drop zone overlay */
+  /* ── LAYER SLIDER OVERLAY ── */
+  #layer-slider-bar {
+    display: none;
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 44px;
+    background: rgba(240,241,242,0.93);
+    border-top: 2px solid var(--border-hi);
+    backdrop-filter: blur(4px);
+    align-items: center; gap: 10px;
+    padding: 0 14px;
+    z-index: 10;
+  }
+  #layer-slider-bar.active { display: flex; }
+  #layer-slider-bar .lsb-label {
+    font-family: var(--mono); font-size: 10px; color: var(--text2);
+    letter-spacing: 0.1em; white-space: nowrap; flex-shrink: 0;
+  }
+  #layer-slider-bar .lsb-val {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    font-weight: 700; min-width: 48px; text-align: right; flex-shrink: 0;
+  }
+  #sl-layer {
+    flex: 1;
+    -webkit-appearance: none; appearance: none;
+    height: 6px;
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--fill,50%), var(--ui-bg2) var(--fill,50%));
+    border: 1px solid var(--border); border-radius: 0; outline: none; cursor: pointer;
+  }
+  #sl-layer::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 26px;
+    border-radius: 2px; cursor: pointer;
+    background: var(--ui-bg0); border: 2px solid var(--accent);
+  }
+  #layer-slider-bar .lsb-total {
+    font-family: var(--mono); font-size: 10px; color: var(--text3); flex-shrink: 0;
+  }
+  #layer-slider-bar .lsb-btn {
+    background: var(--ui-bg1); border: 1px solid var(--border);
+    color: var(--text1); font-family: var(--mono); font-size: 11px;
+    padding: 0 8px; height: 26px; cursor: pointer; border-radius: 2px;
+    display: flex; align-items: center; flex-shrink: 0;
+    transition: background 0.1s;
+  }
+  #layer-slider-bar .lsb-btn:hover { background: var(--ui-bg3); border-color: var(--border-hi); }
+  #layer-slider-bar .lsb-btn.active { background: var(--accent); color: #fff; border-color: var(--accent-hi); }
+
+  /* ── PRINT SETTINGS TOGGLES ── */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 7px; margin-bottom: 2px;
+  }
+  .toggle-label { font-family: var(--mono); font-size: 10px; color: var(--text2); letter-spacing: 0.08em; }
+  .toggle-switch {
+    position: relative; width: 34px; height: 18px; flex-shrink: 0;
+  }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--ui-bg3); border: 1px solid var(--border);
+    border-radius: 9px; cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  }
+  .toggle-track::after {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--text3); transition: left 0.15s, background 0.15s;
+  }
+  .toggle-switch input:checked + .toggle-track { background: var(--accent); border-color: var(--accent-hi); }
+  .toggle-switch input:checked + .toggle-track::after { left: 18px; background: #fff; }
+
+  /* Select input for infill pattern */
+  select.ps-select {
+    width: 100%; background: var(--ui-bg0); border: 1px solid var(--border);
+    color: var(--text0); font-family: var(--mono); font-size: 11px;
+    padding: 4px 6px; margin-top: 3px; cursor: pointer;
+    border-radius: 2px; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236a6c6e'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+  }
+  select.ps-select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+
+  /* spiral mode notice */
+  #spiral-notice {
+    font-family: var(--mono); font-size: 9px; color: var(--amber);
+    background: rgba(160,96,16,0.07); border: 1px solid rgba(160,96,16,0.2);
+    padding: 4px 7px; margin-top: 5px; line-height: 1.5; display: none;
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 900px) {
+
+    #header { flex-wrap: nowrap; overflow: hidden; }
+    .tb-group { padding: 0 5px; gap: 1px; }
+    .tb-group:nth-child(2) { display: none; }
+    .tb-btn { font-size: 10px; padding: 0 7px; height: 28px; }
+    .logo-block { padding: 0 16px 0 10px; font-size: 11px; }
+    #machine-badge, #tb-status, #model-info { display: none !important; }
+    .tb-spacer { display: none; }
+
+    #left-panel { display: none; }
+    #body { grid-template-columns: 1fr; }
+
+    #sl-layer::-webkit-slider-thumb { width: 20px; height: 34px; }
+    #layer-slider-bar { height: 52px; padding: 0 10px; gap: 8px; bottom: 0; right: 48px; left: 0; }
+    #layer-slider-bar .lsb-btn { height: 34px; min-width: 36px; }
+    #mob-dock { bottom: 0; }
+    #viewport { padding-right: 48px; }
+
+    #mob-dock {
+      display: flex; flex-direction: column; align-items: center;
+      position: absolute; top: 0; right: 0; bottom: 52px;
+      width: 48px; z-index: 30;
+      background: var(--ui-bg1);
+      border-left: 2px solid var(--border-hi);
+      padding: 6px 0; gap: 2px;
+    }
+    #mob-dock .mob-btn {
+      width: 38px; height: 38px;
+      background: transparent; border: 1px solid transparent;
+      border-radius: 3px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; color: var(--text1); font-size: 17px; flex-shrink: 0;
+      transition: background 0.1s, border-color 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #mob-dock .mob-btn span {
+      font-family: var(--mono); font-size: 7px; color: var(--text3);
+      letter-spacing: 0.04em; line-height: 1;
+    }
+    #mob-dock .mob-btn:active, #mob-dock .mob-btn.active {
+      background: var(--accent-dim); border-color: var(--accent);
+    }
+    #mob-dock .mob-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent-hi); }
+    #mob-dock .mob-btn.primary span { color: rgba(255,255,255,0.7); }
+    #mob-dock .mob-divider { width: 28px; height: 1px; background: var(--border); margin: 2px 0; flex-shrink: 0; }
+
+    .mob-drawer {
+      display: flex; flex-direction: column;
+      position: absolute; top: 0; right: 48px; bottom: 0;
+      width: 272px; z-index: 29;
+      background: var(--ui-bg0);
+      border-left: 2px solid var(--border-hi);
+      transform: translateX(calc(100% + 50px));
+      transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.18);
+    }
+    .mob-drawer.open { transform: translateX(0); pointer-events: all; }
+    .mob-drawer-head {
+      background: var(--ui-bg1); border-bottom: 2px solid var(--border-hi);
+      display: flex; align-items: center; height: 42px; flex-shrink: 0;
+      padding: 0 12px; gap: 8px;
+    }
+    .mob-drawer-title {
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      color: var(--text1); letter-spacing: 0.12em; text-transform: uppercase; flex: 1;
+    }
+    .mob-drawer-close {
+      background: transparent; border: none; color: var(--text2);
+      font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
+    }
+    .mob-drawer-body { flex: 1; overflow-y: auto; }
+
+    #mob-backdrop {
+      display: none; position: absolute; inset: 0; z-index: 28;
+      background: rgba(0,0,0,0.28);
+    }
+    #mob-backdrop.active { display: block; }
+
+    .modal { width: 100vw !important; max-height: 96vh; }
+    .modal-body[style*="flex-direction:row"] { flex-direction: column !important; }
+    #mat-list-col { width: 100% !important; max-height: 180px; border-right: none !important; border-bottom: 1px solid var(--border); }
+    .mc-grid { grid-template-columns: 1fr 1fr !important; }
+  }
+
+  @media (min-width: 901px) {
+    #mob-dock { display: none; }
+    #mob-backdrop { display: none !important; }
+    .mob-drawer { display: none !important; }
+  }
+
+  /* mat preset list item */
+  .mat-item {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 8px; margin-bottom: 3px;
+    background: var(--ui-bg2); border: 1px solid var(--border);
+    cursor: pointer; border-radius: 2px;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .mat-item:hover { background: var(--ui-bg3); border-color: var(--border-hi); }
+  .mat-item.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .mat-item.builtin { opacity: 0.85; }
+  .mat-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
+  .mat-item-name { flex: 1; font-family: var(--mono); font-size: 11px; color: var(--text0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mat-item-type { font-family: var(--mono); font-size: 9px; color: var(--text3); flex-shrink: 0; }
+  .mat-item-lock { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+
+  /* textarea for the modal */
+  textarea.s-input { width: 100%; }
+
+
   #drop-overlay {
     display: none; position: absolute; inset: 0;
     background: rgba(184,190,198,0.85);
@@ -308,6 +509,7 @@
   </div>
   <div class="tb-group">
     <button class="tb-btn" id="btn-machine">⚙ Machine</button>
+    <button class="tb-btn" id="btn-materials">◈ Materials</button>
   </div>
   <div class="tb-spacer"></div>
   <div id="machine-badge" style="display:none"><div class="dot"></div><span id="machine-badge-name">DEFAULT</span></div>
@@ -348,6 +550,73 @@
       </div>
     </div>
 
+    <!-- MATERIAL -->
+    <div class="ps">
+      <div class="ps-head" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Material</span>
+        <button class="row-btn" id="btn-open-materials" style="font-size:9px;padding:2px 6px">⚙ Manage</button>
+      </div>
+      <div class="ps-body">
+        <label style="margin-top:0">Active Preset</label>
+        <select class="ps-select" id="sel-active-material" style="margin-bottom:6px"></select>
+        <div id="mat-summary" style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding:4px 0"></div>
+      </div>
+    </div>
+
+    <!-- PRINT SETTINGS -->
+    <div class="ps">
+      <div class="ps-head">Print Settings</div>
+      <div class="ps-body">
+        <label>Wall Count <span class="val-display" id="val-walls">3</span></label>
+        <input type="range" id="sl-walls" min="1" max="8" value="3" step="1">
+
+        <label>Top Layers <span class="val-display" id="val-top-layers">4</span></label>
+        <input type="range" id="sl-top-layers" min="0" max="12" value="4" step="1">
+
+        <label>Bottom Layers <span class="val-display" id="val-bot-layers">4</span></label>
+        <input type="range" id="sl-bot-layers" min="0" max="12" value="4" step="1">
+
+        <label>Infill Density <span class="val-display" id="val-infill">15%</span></label>
+        <input type="range" id="sl-infill" min="0" max="100" value="15" step="5">
+
+        <label style="margin-bottom:3px">Infill Pattern</label>
+        <select class="ps-select" id="sel-infill-pattern">
+          <option value="grid">Grid</option>
+          <option value="lines">Lines</option>
+          <option value="gyroid">Gyroid</option>
+          <option value="honeycomb">Honeycomb</option>
+          <option value="triangles">Triangles</option>
+          <option value="cubic">Cubic</option>
+          <option value="concentric">Concentric</option>
+        </select>
+
+        <div class="toggle-row" style="margin-top:10px">
+          <span class="toggle-label">Spiral / Vase Mode</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chk-spiral">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div id="spiral-notice">Spiral mode: 1 wall, no top/bottom,<br>0% infill. Overrides wall &amp; infill settings.</div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Support Material</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chk-supports">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Print Cooling</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chk-cooling" checked>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <!-- SLICER SETTINGS -->
     <div class="ps">
       <div class="ps-head">Slicer Settings</div>
@@ -374,8 +643,71 @@
   <!-- VIEWPORT -->
   <div id="viewport">
     <canvas id="canvas"></canvas>
-    <div id="corner-tl">5X·SLICER<br><span id="coord-display" style="color:rgba(0,0,0,0.3)">X:0 Y:0 Z:0</span></div>
+    <!-- MOBILE DOCK -->
+  <div id="mob-dock">
+    <button class="mob-btn primary" id="mob-btn-slice" title="Slice">▶<span>SLICE</span></button>
+    <button class="mob-btn" id="mob-btn-load" title="Load STL">⬆<span>STL</span></button>
+    <button class="mob-btn" id="mob-btn-plane" title="Add Plane">✦<span>PLANE</span></button>
+    <div class="mob-divider"></div>
+    <button class="mob-btn" id="mob-btn-planes" title="Planes">☰<span>PLANES</span></button>
+    <button class="mob-btn" id="mob-btn-mat" title="Material">◈<span>MAT</span></button>
+    <button class="mob-btn" id="mob-btn-print" title="Print Settings">⚙<span>PRINT</span></button>
+    <button class="mob-btn" id="mob-btn-slicer" title="Slicer Settings">≡<span>SLICER</span></button>
+    <div class="mob-divider"></div>
+    <button class="mob-btn" id="mob-btn-machine" title="Machine">⚙<span>MCH</span></button>
+    <button class="mob-btn" id="mob-btn-clear" title="Clear" style="color:var(--red)">✕<span>CLEAR</span></button>
+  </div>
+
+  <!-- MOBILE BACKDROP -->
+  <div id="mob-backdrop"></div>
+
+  <!-- DRAWER: Planes -->
+  <div class="mob-drawer" id="mob-drawer-planes">
+    <div class="mob-drawer-head">
+      <span class="mob-drawer-title">Planes</span>
+      <button class="mob-drawer-close" data-drawer="planes">✕</button>
+    </div>
+    <div class="mob-drawer-body" id="mob-planes-body"></div>
+  </div>
+
+  <!-- DRAWER: Material -->
+  <div class="mob-drawer" id="mob-drawer-mat">
+    <div class="mob-drawer-head">
+      <span class="mob-drawer-title">Material</span>
+      <button class="mob-drawer-close" data-drawer="mat">✕</button>
+    </div>
+    <div class="mob-drawer-body" id="mob-mat-body"></div>
+  </div>
+
+  <!-- DRAWER: Print Settings -->
+  <div class="mob-drawer" id="mob-drawer-print">
+    <div class="mob-drawer-head">
+      <span class="mob-drawer-title">Print Settings</span>
+      <button class="mob-drawer-close" data-drawer="print">✕</button>
+    </div>
+    <div class="mob-drawer-body" id="mob-print-body"></div>
+  </div>
+
+  <!-- DRAWER: Slicer Settings -->
+  <div class="mob-drawer" id="mob-drawer-slicer">
+    <div class="mob-drawer-head">
+      <span class="mob-drawer-title">Slicer Settings</span>
+      <button class="mob-drawer-close" data-drawer="slicer">✕</button>
+    </div>
+    <div class="mob-drawer-body" id="mob-slicer-body"></div>
+  </div>
+
+  <div id="corner-tl">5X·SLICER<br><span id="coord-display" style="color:rgba(0,0,0,0.3)">X:0 Y:0 Z:0</span></div>
     <div id="corner-br">Scroll=zoom · Drag=orbit<br>Right drag=pan</div>
+    <div id="layer-slider-bar">
+      <span class="lsb-label">LAYER</span>
+      <button class="lsb-btn" id="lsb-prev">◀</button>
+      <input type="range" id="sl-layer" min="0" max="0" value="0" step="1">
+      <button class="lsb-btn" id="lsb-next">▶</button>
+      <span class="lsb-val" id="lsb-cur">0</span>
+      <span class="lsb-total" id="lsb-total">/ 0</span>
+      <button class="lsb-btn" id="lsb-all" title="Show all layers">ALL</button>
+    </div>
     <div id="drop-overlay">
       <div class="drop-icon">⬆</div>
       <div class="drop-text">DROP STL FILE</div>
@@ -384,6 +716,169 @@
 
 </div><!-- #body -->
 </div><!-- #app -->
+
+<!-- MATERIALS OVERLAY -->
+<div class="modal-overlay" id="materials-overlay">
+  <div class="modal" style="width:min(820px,96vw)">
+    <div class="modal-head">
+      <div class="logo-block">5X<span>·SLICER</span></div>
+      <span class="modal-head-title">MATERIAL PRESETS</span>
+      <button class="modal-close" id="mat-overlay-close">✕</button>
+    </div>
+    <div class="modal-body" style="flex-direction:row;gap:0;padding:0;overflow:hidden">
+
+      <!-- LEFT: preset list -->
+      <div id="mat-list-col" style="width:200px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+        <div style="background:var(--ui-bg1);border-bottom:1px solid var(--border);padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:0.1em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;justify-content:space-between">
+          <span>Presets</span>
+          <button class="row-btn" id="mat-new-btn" style="font-size:9px;padding:2px 6px">＋ New</button>
+        </div>
+        <div id="mat-preset-list" style="flex:1;overflow-y:auto;padding:6px"></div>
+        <div style="border-top:1px solid var(--border);padding:6px;display:flex;flex-direction:column;gap:4px">
+          <button class="row-btn" id="mat-import-btn" style="width:100%;text-align:center">⬆ Import JSON</button>
+          <button class="row-btn" id="mat-export-all-btn" style="width:100%;text-align:center">⬇ Export All</button>
+          <input type="file" id="mat-import-file" accept=".json" style="display:none">
+        </div>
+      </div>
+
+      <!-- RIGHT: editor -->
+      <div id="mat-editor-col" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div id="mat-editor-empty" style="font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;padding:40px 0">Select or create a preset</div>
+        <div id="mat-editor-form" style="display:none;flex-direction:column;gap:12px">
+
+          <!-- Name / type row -->
+          <div class="mc-section">
+            <div class="mc-section-head">Identity</div>
+            <div class="mc-section-body">
+              <div class="mc-grid" style="grid-template-columns:1fr 120px 80px">
+                <div class="mc-field">
+                  <span class="mc-label">NAME</span>
+                  <input type="text" class="s-input" id="mat-name" placeholder="e.g. PLA Basic White">
+                </div>
+                <div class="mc-field">
+                  <span class="mc-label">TYPE</span>
+                  <select class="s-input" id="mat-type">
+                    <option>PLA</option><option>PETG</option><option>ABS</option>
+                    <option>ASA</option><option>TPU</option><option>PA</option>
+                    <option>PC</option><option>HIPS</option><option>PVA</option>
+                    <option>CF-PLA</option><option>CF-PETG</option><option>CF-PA</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="mc-field">
+                  <span class="mc-label">COLOR</span>
+                  <input type="color" id="mat-color" value="#2a7fff" style="width:100%;height:30px;border:1px solid var(--border);cursor:pointer;padding:2px 3px;background:var(--ui-bg0)">
+                </div>
+              </div>
+              <div class="mc-field" style="margin-top:8px">
+                <span class="mc-label">NOTES</span>
+                <input type="text" class="s-input" id="mat-notes" placeholder="Optional notes / vendor / colour name">
+              </div>
+            </div>
+          </div>
+
+          <!-- Temperatures -->
+          <div class="mc-section">
+            <div class="mc-section-head">Temperatures (°C)</div>
+            <div class="mc-section-body">
+              <div class="mc-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="mc-field"><span class="mc-label">NOZZLE</span><input type="number" class="s-input" id="mat-temp-nozzle" min="100" max="350" step="1" value="215"></div>
+                <div class="mc-field"><span class="mc-label">NOZZLE 1ST</span><input type="number" class="s-input" id="mat-temp-nozzle-1st" min="100" max="350" step="1" value="220"></div>
+                <div class="mc-field"><span class="mc-label">BED</span><input type="number" class="s-input" id="mat-temp-bed" min="0" max="150" step="1" value="60"></div>
+                <div class="mc-field"><span class="mc-label">BED 1ST</span><input type="number" class="s-input" id="mat-temp-bed-1st" min="0" max="150" step="1" value="65"></div>
+                <div class="mc-field"><span class="mc-label">CHAMBER</span><input type="number" class="s-input" id="mat-temp-chamber" min="0" max="100" step="1" value="0"></div>
+                <div class="mc-field"><span class="mc-label">MIN COOLING</span><input type="number" class="s-input" id="mat-temp-min" min="100" max="350" step="1" value="180"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Speeds -->
+          <div class="mc-section">
+            <div class="mc-section-head">Speeds (mm/s)</div>
+            <div class="mc-section-body">
+              <div class="mc-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="mc-field"><span class="mc-label">PRINT</span><input type="number" class="s-input" id="mat-spd-print" min="1" max="500" step="1" value="60"></div>
+                <div class="mc-field"><span class="mc-label">PERIMETER</span><input type="number" class="s-input" id="mat-spd-wall" min="1" max="500" step="1" value="45"></div>
+                <div class="mc-field"><span class="mc-label">INFILL</span><input type="number" class="s-input" id="mat-spd-infill" min="1" max="500" step="1" value="80"></div>
+                <div class="mc-field"><span class="mc-label">TRAVEL</span><input type="number" class="s-input" id="mat-spd-travel" min="1" max="500" step="1" value="120"></div>
+                <div class="mc-field"><span class="mc-label">FIRST LAYER</span><input type="number" class="s-input" id="mat-spd-first" min="1" max="100" step="1" value="25"></div>
+                <div class="mc-field"><span class="mc-label">BRIDGE</span><input type="number" class="s-input" id="mat-spd-bridge" min="1" max="200" step="1" value="30"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flow / Extrusion -->
+          <div class="mc-section">
+            <div class="mc-section-head">Flow &amp; Extrusion</div>
+            <div class="mc-section-body">
+              <div class="mc-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="mc-field"><span class="mc-label">FLOW % </span><input type="number" class="s-input" id="mat-flow" min="50" max="150" step="1" value="100"></div>
+                <div class="mc-field"><span class="mc-label">FIRST LAYER %</span><input type="number" class="s-input" id="mat-flow-first" min="50" max="200" step="1" value="100"></div>
+                <div class="mc-field"><span class="mc-label">LINE WIDTH %</span><input type="number" class="s-input" id="mat-line-width" min="50" max="200" step="1" value="100"></div>
+                <div class="mc-field"><span class="mc-label">DENSITY (g/cm³)</span><input type="number" class="s-input" id="mat-density" min="0.5" max="5" step="0.01" value="1.24"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Retraction -->
+          <div class="mc-section">
+            <div class="mc-section-head">Retraction</div>
+            <div class="mc-section-body">
+              <div class="mc-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="mc-field"><span class="mc-label">DIST (mm)</span><input type="number" class="s-input" id="mat-retract-dist" min="0" max="20" step="0.1" value="0.8"></div>
+                <div class="mc-field"><span class="mc-label">SPEED (mm/s)</span><input type="number" class="s-input" id="mat-retract-spd" min="1" max="200" step="1" value="45"></div>
+                <div class="mc-field"><span class="mc-label">PRIME (mm)</span><input type="number" class="s-input" id="mat-retract-prime" min="0" max="5" step="0.05" value="0"></div>
+                <div class="mc-field"><span class="mc-label">Z-HOP (mm)</span><input type="number" class="s-input" id="mat-zhop" min="0" max="5" step="0.05" value="0"></div>
+                <div class="mc-field"><span class="mc-label">MIN TRAVEL (mm)</span><input type="number" class="s-input" id="mat-retract-min" min="0" max="20" step="0.5" value="1.5"></div>
+                <div class="mc-field"><span class="mc-label">WIPE DIST (mm)</span><input type="number" class="s-input" id="mat-wipe" min="0" max="10" step="0.5" value="1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cooling -->
+          <div class="mc-section">
+            <div class="mc-section-head">Cooling</div>
+            <div class="mc-section-body">
+              <div class="mc-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="mc-field"><span class="mc-label">FAN MIN %</span><input type="number" class="s-input" id="mat-fan-min" min="0" max="100" step="1" value="0"></div>
+                <div class="mc-field"><span class="mc-label">FAN MAX %</span><input type="number" class="s-input" id="mat-fan-max" min="0" max="100" step="1" value="100"></div>
+                <div class="mc-field"><span class="mc-label">START LAYER</span><input type="number" class="s-input" id="mat-fan-layer" min="0" max="20" step="1" value="3"></div>
+                <div class="mc-field">
+                  <span class="mc-label">OVERHANG COOLING</span>
+                  <div style="margin-top:6px"><label class="toggle-switch"><input type="checkbox" id="mat-fan-overhang" checked><span class="toggle-track"></span></label></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Start/End G-code -->
+          <div class="mc-section">
+            <div class="mc-section-head">Custom G-code Snippets</div>
+            <div class="mc-section-body" style="display:flex;flex-direction:column;gap:8px">
+              <div class="mc-field">
+                <span class="mc-label">MATERIAL START G-CODE</span>
+                <textarea class="s-input" id="mat-gcode-start" rows="4" style="resize:vertical;font-size:11px;line-height:1.5;margin-top:3px" placeholder="; runs after homing, before first layer&#10;M104 S{nozzle_temp}&#10;M140 S{bed_temp}"></textarea>
+              </div>
+              <div class="mc-field">
+                <span class="mc-label">MATERIAL END G-CODE</span>
+                <textarea class="s-input" id="mat-gcode-end" rows="3" style="resize:vertical;font-size:11px;line-height:1.5;margin-top:3px" placeholder="; runs at end of print&#10;M104 S0&#10;M140 S0"></textarea>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- #mat-editor-form -->
+      </div><!-- #mat-editor-col -->
+
+    </div><!-- .modal-body -->
+    <div class="modal-footer">
+      <button class="tb-btn danger" id="mat-delete-btn" style="display:none">✕ Delete</button>
+      <button class="tb-btn" id="mat-export-one-btn" style="display:none">⬇ Export Preset</button>
+      <div style="flex:1"></div>
+      <button class="tb-btn" id="mat-discard-btn">Discard Changes</button>
+      <button class="tb-btn primary" id="mat-save-btn">✓ Save Preset</button>
+    </div>
+  </div>
+</div>
 
 <!-- MACHINE CONFIG OVERLAY -->
 <div class="modal-overlay" id="machine-overlay">
@@ -615,10 +1110,24 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 let loadedGeometry = null;     // raw BufferGeometry
 let modelMeshes = [];          // coloured chunk meshes
 let planeMeshes = [];          // visual plane helpers
-let contourLines = [];         // sliced contour lines
+let contourLines = [];         // sliced contour lines (flat array, legacy)
+let contourByLayer = [];       // [{line, layerIdx, chunkIdx}] indexed array
+let currentLayerView = -1;     // -1 = show all
 let planes = [];               // [{id, pos, tiltDeg, rotDeg, mesh, color}]
 let selectedPlane = -1;
 let nextPlaneId = 1;
+
+// ── Print Settings state ──────────────────────────────
+const printSettings = {
+  walls: 3,
+  topLayers: 4,
+  botLayers: 4,
+  infillPct: 15,
+  infillPattern: 'grid',
+  spiral: false,
+  supports: false,
+  cooling: true,
+};
 
 const CHUNK_COLORS = [
   0x2a7fff, 0xff6a20, 0x22cc88, 0xdd44cc,
@@ -1009,6 +1518,9 @@ document.getElementById('sl-blend').addEventListener('input', function() {
 function clearContours() {
   contourLines.forEach(l => scene.remove(l));
   contourLines = [];
+  contourByLayer = [];
+  currentLayerView = -1;
+  document.getElementById('layer-slider-bar').classList.remove('active');
 }
 
 function sliceModel() {
@@ -1024,6 +1536,7 @@ function sliceModel() {
 
   setTimeout(() => {
     let totalContours = 0;
+    let globalLayerIdx = 0;
     const positions = loadedGeometry.attributes.position.array;
     const numTris = positions.length / 9;
 
@@ -1117,13 +1630,31 @@ function sliceModel() {
 
         const mat = new THREE.LineBasicMaterial({ color: lineColor, transparent: true, opacity: 0.9 });
         const line = new THREE.LineSegments(geo, mat);
+        line.userData.layerIdx = globalLayerIdx;
+        line.userData.chunkIdx = ci;
         scene.add(line);
         contourLines.push(line);
+        contourByLayer.push({ line, layerIdx: globalLayerIdx, chunkIdx: ci });
         totalContours++;
+        globalLayerIdx++;
       }
     }
 
-    setStatus(`Sliced · ${totalContours} layers · yellow = blend zones`);
+    // Activate layer slider
+    const totalLayers = globalLayerIdx;
+    const slLayer = document.getElementById('sl-layer');
+    slLayer.max = Math.max(0, totalLayers - 1);
+    slLayer.value = Math.max(0, totalLayers - 1);
+    document.getElementById('lsb-cur').textContent = Math.max(0, totalLayers - 1);
+    document.getElementById('lsb-total').textContent = '/ ' + Math.max(0, totalLayers - 1);
+    updateLayerSliderFill();
+    if (totalLayers > 0) {
+      document.getElementById('layer-slider-bar').classList.add('active');
+      currentLayerView = -1; // start showing all
+      setLayerView(-1);
+    }
+
+    setStatus(`Sliced · ${totalLayers} layers · yellow = blend zones`);
   }, 10);
 }
 
@@ -1160,6 +1691,96 @@ function intersectMeshWithPlane(triVerts, n, d) {
   });
   return segments;
 }
+
+// ── Layer view control ────────────────────────────────
+function setLayerView(layerIdx) {
+  currentLayerView = layerIdx;
+  const showAll = layerIdx < 0;
+  contourByLayer.forEach(({ line, layerIdx: li }) => {
+    line.visible = showAll ? true : li <= layerIdx;
+  });
+  // Also dim chunk meshes: show only chunks that contain visible layers
+  // (for now just keep them all — focus is the contour lines)
+  const allBtn = document.getElementById('lsb-all');
+  if (allBtn) allBtn.classList.toggle('active', showAll);
+}
+
+function updateLayerSliderFill() {
+  const sl = document.getElementById('sl-layer');
+  const pct = sl.max > 0 ? (sl.value / sl.max) * 100 : 0;
+  sl.style.setProperty('--fill', pct + '%');
+}
+
+// Layer slider events
+document.getElementById('sl-layer').addEventListener('input', function() {
+  const v = parseInt(this.value);
+  document.getElementById('lsb-cur').textContent = v;
+  updateLayerSliderFill();
+  setLayerView(v);
+});
+
+document.getElementById('lsb-prev').addEventListener('click', () => {
+  const sl = document.getElementById('sl-layer');
+  if (currentLayerView < 0) {
+    sl.value = sl.max;
+  } else if (sl.value > 0) {
+    sl.value = parseInt(sl.value) - 1;
+  }
+  sl.dispatchEvent(new Event('input'));
+});
+
+document.getElementById('lsb-next').addEventListener('click', () => {
+  const sl = document.getElementById('sl-layer');
+  if (parseInt(sl.value) < parseInt(sl.max)) {
+    sl.value = parseInt(sl.value) + 1;
+    sl.dispatchEvent(new Event('input'));
+  }
+});
+
+document.getElementById('lsb-all').addEventListener('click', function() {
+  const sl = document.getElementById('sl-layer');
+  sl.value = sl.max;
+  document.getElementById('lsb-cur').textContent = sl.max;
+  updateLayerSliderFill();
+  setLayerView(-1);
+});
+
+// ── Print Settings wiring ─────────────────────────────
+document.getElementById('sl-walls').addEventListener('input', function() {
+  printSettings.walls = parseInt(this.value);
+  document.getElementById('val-walls').textContent = this.value;
+});
+document.getElementById('sl-top-layers').addEventListener('input', function() {
+  printSettings.topLayers = parseInt(this.value);
+  document.getElementById('val-top-layers').textContent = this.value;
+});
+document.getElementById('sl-bot-layers').addEventListener('input', function() {
+  printSettings.botLayers = parseInt(this.value);
+  document.getElementById('val-bot-layers').textContent = this.value;
+});
+document.getElementById('sl-infill').addEventListener('input', function() {
+  printSettings.infillPct = parseInt(this.value);
+  document.getElementById('val-infill').textContent = this.value + '%';
+});
+document.getElementById('sel-infill-pattern').addEventListener('change', function() {
+  printSettings.infillPattern = this.value;
+});
+document.getElementById('chk-spiral').addEventListener('change', function() {
+  printSettings.spiral = this.checked;
+  document.getElementById('spiral-notice').style.display = this.checked ? 'block' : 'none';
+  // Grey out wall/infill controls in spiral mode
+  const dim = this.checked;
+  ['sl-walls','sl-infill','sl-top-layers','sl-bot-layers','sel-infill-pattern'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = dim; el.style.opacity = dim ? '0.4' : '1'; }
+  });
+});
+document.getElementById('chk-supports').addEventListener('change', function() {
+  printSettings.supports = this.checked;
+});
+document.getElementById('chk-cooling').addEventListener('change', function() {
+  printSettings.cooling = this.checked;
+});
 
 // ── UI Wiring ─────────────────────────────────────────
 document.getElementById('btn-load').addEventListener('click', () => {
@@ -1603,6 +2224,645 @@ document.getElementById('mc-import-file').addEventListener('change', function() 
 // Initialise with defaults on load
 applyMachineConfig(machineConfig);
 document.getElementById('machine-badge').style.display = 'none'; // hide until user loads/saves
+
+
+// ═══════════════════════════════════════════════════════
+//  MATERIAL PRESETS
+// ═══════════════════════════════════════════════════════
+
+const BUILTIN_MATERIALS = [
+  {
+    id: 'builtin-pla', builtin: true, name: 'PLA Generic', type: 'PLA', color: '#2a7fff', notes: 'Standard PLA · easy to print',
+    tempNozzle: 215, tempNozzle1st: 220, tempBed: 60, tempBed1st: 65, tempChamber: 0, tempMinCooling: 180,
+    spdPrint: 60, spdWall: 45, spdInfill: 80, spdTravel: 120, spdFirst: 25, spdBridge: 30,
+    flow: 100, flowFirst: 100, lineWidth: 100, density: 1.24,
+    retractDist: 0.8, retractSpd: 45, retractPrime: 0, zHop: 0, retractMin: 1.5, wipe: 1,
+    fanMin: 0, fanMax: 100, fanLayer: 3, fanOverhang: true,
+    gcodeStart: '', gcodeEnd: '',
+  },
+  {
+    id: 'builtin-pla-cf', builtin: true, name: 'PLA-CF Generic', type: 'CF-PLA', color: '#2a2a2a', notes: 'Carbon fibre PLA · wear-resistant nozzle req.',
+    tempNozzle: 230, tempNozzle1st: 235, tempBed: 60, tempBed1st: 65, tempChamber: 0, tempMinCooling: 200,
+    spdPrint: 40, spdWall: 30, spdInfill: 60, spdTravel: 120, spdFirst: 20, spdBridge: 25,
+    flow: 98, flowFirst: 100, lineWidth: 100, density: 1.30,
+    retractDist: 0.5, retractSpd: 35, retractPrime: 0, zHop: 0.2, retractMin: 1.5, wipe: 0.5,
+    fanMin: 0, fanMax: 80, fanLayer: 3, fanOverhang: true,
+    gcodeStart: '', gcodeEnd: '',
+  },
+  {
+    id: 'builtin-petg', builtin: true, name: 'PETG Generic', type: 'PETG', color: '#22cc88', notes: 'Standard PETG · good layer adhesion',
+    tempNozzle: 240, tempNozzle1st: 245, tempBed: 80, tempBed1st: 85, tempChamber: 0, tempMinCooling: 220,
+    spdPrint: 50, spdWall: 40, spdInfill: 65, spdTravel: 100, spdFirst: 20, spdBridge: 25,
+    flow: 97, flowFirst: 100, lineWidth: 100, density: 1.27,
+    retractDist: 1.0, retractSpd: 35, retractPrime: 0, zHop: 0.2, retractMin: 2, wipe: 1.5,
+    fanMin: 0, fanMax: 50, fanLayer: 4, fanOverhang: true,
+    gcodeStart: '', gcodeEnd: '',
+  },
+  {
+    id: 'builtin-abs', builtin: true, name: 'ABS Generic', type: 'ABS', color: '#ff6a20', notes: 'ABS · enclosed chamber recommended',
+    tempNozzle: 250, tempNozzle1st: 255, tempBed: 100, tempBed1st: 110, tempChamber: 50, tempMinCooling: 230,
+    spdPrint: 50, spdWall: 40, spdInfill: 70, spdTravel: 150, spdFirst: 20, spdBridge: 25,
+    flow: 100, flowFirst: 100, lineWidth: 100, density: 1.05,
+    retractDist: 0.8, retractSpd: 40, retractPrime: 0, zHop: 0.2, retractMin: 1.5, wipe: 1,
+    fanMin: 0, fanMax: 20, fanLayer: 5, fanOverhang: false,
+    gcodeStart: '', gcodeEnd: '',
+  },
+  {
+    id: 'builtin-asa', builtin: true, name: 'ASA Generic', type: 'ASA', color: '#dd44cc', notes: 'ASA · UV-resistant, enclosed recommended',
+    tempNozzle: 255, tempNozzle1st: 260, tempBed: 100, tempBed1st: 110, tempChamber: 50, tempMinCooling: 240,
+    spdPrint: 45, spdWall: 35, spdInfill: 65, spdTravel: 150, spdFirst: 20, spdBridge: 22,
+    flow: 100, flowFirst: 100, lineWidth: 100, density: 1.07,
+    retractDist: 0.8, retractSpd: 40, retractPrime: 0, zHop: 0.2, retractMin: 1.5, wipe: 1,
+    fanMin: 0, fanMax: 20, fanLayer: 5, fanOverhang: false,
+    gcodeStart: '', gcodeEnd: '',
+  },
+  {
+    id: 'builtin-tpu', builtin: true, name: 'TPU 95A Generic', type: 'TPU', color: '#ffcc00', notes: 'Flexible · direct drive req. · slow speeds',
+    tempNozzle: 225, tempNozzle1st: 230, tempBed: 30, tempBed1st: 35, tempChamber: 0, tempMinCooling: 200,
+    spdPrint: 25, spdWall: 20, spdInfill: 30, spdTravel: 60, spdFirst: 15, spdBridge: 15,
+    flow: 100, flowFirst: 100, lineWidth: 100, density: 1.21,
+    retractDist: 0, retractSpd: 25, retractPrime: 0, zHop: 0, retractMin: 5, wipe: 0,
+    fanMin: 0, fanMax: 50, fanLayer: 3, fanOverhang: false,
+    gcodeStart: '', gcodeEnd: '',
+  },
+  {
+    id: 'builtin-pa', builtin: true, name: 'PA12 Generic', type: 'PA', color: '#e0e0e0', notes: 'Nylon PA12 · dry filament, enclosed req.',
+    tempNozzle: 265, tempNozzle1st: 270, tempBed: 85, tempBed1st: 90, tempChamber: 60, tempMinCooling: 250,
+    spdPrint: 40, spdWall: 30, spdInfill: 55, spdTravel: 130, spdFirst: 18, spdBridge: 20,
+    flow: 100, flowFirst: 105, lineWidth: 100, density: 1.01,
+    retractDist: 1.5, retractSpd: 40, retractPrime: 0.2, zHop: 0.3, retractMin: 2, wipe: 1,
+    fanMin: 0, fanMax: 20, fanLayer: 5, fanOverhang: false,
+    gcodeStart: '', gcodeEnd: '',
+  },
+  {
+    id: 'builtin-pc', builtin: true, name: 'PC Generic', type: 'PC', color: '#aad4ff', notes: 'Polycarbonate · hot chamber, max flow',
+    tempNozzle: 300, tempNozzle1st: 305, tempBed: 120, tempBed1st: 125, tempChamber: 80, tempMinCooling: 280,
+    spdPrint: 35, spdWall: 28, spdInfill: 50, spdTravel: 120, spdFirst: 15, spdBridge: 18,
+    flow: 100, flowFirst: 100, lineWidth: 100, density: 1.20,
+    retractDist: 0.8, retractSpd: 35, retractPrime: 0, zHop: 0.3, retractMin: 2, wipe: 1,
+    fanMin: 0, fanMax: 10, fanLayer: 6, fanOverhang: false,
+    gcodeStart: '', gcodeEnd: '',
+  },
+];
+
+// User materials stored in localStorage
+const MAT_STORAGE_KEY = '5xslicer_materials_v1';
+let userMaterials = [];
+let activeMaterialId = BUILTIN_MATERIALS[0].id;
+let editingMaterialId = null;
+
+function loadUserMaterials() {
+  try {
+    const raw = localStorage.getItem(MAT_STORAGE_KEY);
+    userMaterials = raw ? JSON.parse(raw) : [];
+  } catch(e) { userMaterials = []; }
+}
+
+function saveUserMaterials() {
+  try { localStorage.setItem(MAT_STORAGE_KEY, JSON.stringify(userMaterials)); } catch(e) {}
+}
+
+function allMaterials() {
+  return [...BUILTIN_MATERIALS, ...userMaterials];
+}
+
+function getMaterialById(id) {
+  return allMaterials().find(m => m.id === id) || BUILTIN_MATERIALS[0];
+}
+
+// ── Active material selector ──────────────────────────
+function populateActiveMaterialSelect() {
+  const sel = document.getElementById('sel-active-material');
+  sel.innerHTML = '';
+  allMaterials().forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = (m.builtin ? '⊕ ' : '◈ ') + m.name;
+    if (m.id === activeMaterialId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  updateMatSummary();
+}
+
+function updateMatSummary() {
+  const m = getMaterialById(activeMaterialId);
+  document.getElementById('mat-summary').innerHTML =
+    `<span style="color:var(--text1)">${m.type}</span> &nbsp;` +
+    `🌡 ${m.tempNozzle}°C / ${m.tempBed}°C bed &nbsp;` +
+    `⚡ ${m.spdPrint} mm/s &nbsp;` +
+    `<span style="color:var(--accent-hi)">↩ ${m.retractDist}mm</span>` +
+    (m.notes ? `<br><span style="color:var(--text3)">${m.notes}</span>` : '');
+}
+
+document.getElementById('sel-active-material').addEventListener('change', function() {
+  activeMaterialId = this.value;
+  updateMatSummary();
+});
+
+// ── Materials overlay ─────────────────────────────────
+function openMaterialsOverlay() {
+  editingMaterialId = null;
+  renderMatList();
+  showMatEditor(null);
+  document.getElementById('materials-overlay').classList.add('open');
+}
+
+function renderMatList() {
+  const el = document.getElementById('mat-preset-list');
+  el.innerHTML = '';
+
+  const groups = [
+    { label: 'BUILT-IN', items: BUILTIN_MATERIALS },
+    { label: 'USER', items: userMaterials },
+  ];
+
+  groups.forEach(g => {
+    if (g.items.length === 0 && g.label === 'USER') return;
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.12em;padding:6px 4px 3px;text-transform:uppercase';
+    hdr.textContent = g.label;
+    el.appendChild(hdr);
+
+    g.items.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'mat-item' + (m.builtin ? ' builtin' : '') + (m.id === editingMaterialId ? ' selected' : '');
+      div.innerHTML = `
+        <div class="mat-swatch" style="background:${m.color}"></div>
+        <span class="mat-item-name">${m.name}</span>
+        <span class="mat-item-type">${m.type}</span>
+        ${m.builtin ? '<span class="mat-item-lock">🔒</span>' : ''}
+      `;
+      div.addEventListener('click', () => {
+        editingMaterialId = m.id;
+        renderMatList();
+        showMatEditor(m);
+      });
+      el.appendChild(div);
+    });
+  });
+
+  if (userMaterials.length === 0) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-family:var(--mono);font-size:10px;color:var(--text3);padding:6px 6px 0;line-height:1.6';
+    hint.textContent = 'No user presets yet.\nClick ＋ New to create one.';
+    el.appendChild(hint);
+  }
+}
+
+const MAT_FIELDS = [
+  ['mat-name','name','text'], ['mat-type','type','select'], ['mat-color','color','color'],
+  ['mat-notes','notes','text'],
+  ['mat-temp-nozzle','tempNozzle','number'], ['mat-temp-nozzle-1st','tempNozzle1st','number'],
+  ['mat-temp-bed','tempBed','number'], ['mat-temp-bed-1st','tempBed1st','number'],
+  ['mat-temp-chamber','tempChamber','number'], ['mat-temp-min','tempMinCooling','number'],
+  ['mat-spd-print','spdPrint','number'], ['mat-spd-wall','spdWall','number'],
+  ['mat-spd-infill','spdInfill','number'], ['mat-spd-travel','spdTravel','number'],
+  ['mat-spd-first','spdFirst','number'], ['mat-spd-bridge','spdBridge','number'],
+  ['mat-flow','flow','number'], ['mat-flow-first','flowFirst','number'],
+  ['mat-line-width','lineWidth','number'], ['mat-density','density','number'],
+  ['mat-retract-dist','retractDist','number'], ['mat-retract-spd','retractSpd','number'],
+  ['mat-retract-prime','retractPrime','number'], ['mat-zhop','zHop','number'],
+  ['mat-retract-min','retractMin','number'], ['mat-wipe','wipe','number'],
+  ['mat-fan-min','fanMin','number'], ['mat-fan-max','fanMax','number'],
+  ['mat-fan-layer','fanLayer','number'], ['mat-fan-overhang','fanOverhang','checkbox'],
+  ['mat-gcode-start','gcodeStart','textarea'], ['mat-gcode-end','gcodeEnd','textarea'],
+];
+
+function showMatEditor(m) {
+  const form = document.getElementById('mat-editor-form');
+  const empty = document.getElementById('mat-editor-empty');
+  const delBtn = document.getElementById('mat-delete-btn');
+  const expBtn = document.getElementById('mat-export-one-btn');
+
+  if (!m) {
+    form.style.display = 'none';
+    empty.style.display = 'block';
+    delBtn.style.display = 'none';
+    expBtn.style.display = 'none';
+    return;
+  }
+
+  form.style.display = 'flex';
+  empty.style.display = 'none';
+  delBtn.style.display = m.builtin ? 'none' : '';
+  expBtn.style.display = '';
+
+  // Populate fields
+  MAT_FIELDS.forEach(([id, key, type]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (type === 'checkbox') el.checked = !!m[key];
+    else el.value = m[key] !== undefined ? m[key] : '';
+  });
+
+  // Disable all fields for builtins (read-only view)
+  const isBuiltin = !!m.builtin;
+  MAT_FIELDS.forEach(([id]) => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = isBuiltin; el.style.opacity = isBuiltin ? '0.6' : '1'; }
+  });
+
+  document.getElementById('mat-save-btn').style.opacity = isBuiltin ? '0.4' : '1';
+  document.getElementById('mat-save-btn').disabled = isBuiltin;
+}
+
+function collectMatForm() {
+  const m = {};
+  MAT_FIELDS.forEach(([id, key, type]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (type === 'checkbox') m[key] = el.checked;
+    else if (type === 'number') m[key] = parseFloat(el.value) || 0;
+    else m[key] = el.value;
+  });
+  return m;
+}
+
+function createNewMaterial() {
+  // Clone first builtin as template
+  const base = {...BUILTIN_MATERIALS[0]};
+  const id = 'user-' + Date.now();
+  const m = {...base, id, builtin: false, name: 'New Material', notes: ''};
+  userMaterials.push(m);
+  saveUserMaterials();
+  editingMaterialId = id;
+  renderMatList();
+  showMatEditor(m);
+  populateActiveMaterialSelect();
+}
+
+document.getElementById('mat-new-btn').addEventListener('click', createNewMaterial);
+
+document.getElementById('mat-save-btn').addEventListener('click', () => {
+  if (!editingMaterialId) return;
+  const existing = userMaterials.find(m => m.id === editingMaterialId);
+  if (!existing) return; // can't save builtins
+  const updates = collectMatForm();
+  Object.assign(existing, updates);
+  existing.id = editingMaterialId;
+  existing.builtin = false;
+  saveUserMaterials();
+  renderMatList();
+  populateActiveMaterialSelect();
+  setStatus('Material saved: ' + existing.name);
+});
+
+document.getElementById('mat-discard-btn').addEventListener('click', () => {
+  if (editingMaterialId) {
+    const m = getMaterialById(editingMaterialId);
+    showMatEditor(m);
+  }
+});
+
+document.getElementById('mat-delete-btn').addEventListener('click', () => {
+  if (!editingMaterialId) return;
+  const m = userMaterials.find(m => m.id === editingMaterialId);
+  if (!m) return;
+  if (!confirm('Delete preset "' + m.name + '"?')) return;
+  userMaterials = userMaterials.filter(x => x.id !== editingMaterialId);
+  if (activeMaterialId === editingMaterialId) activeMaterialId = BUILTIN_MATERIALS[0].id;
+  saveUserMaterials();
+  editingMaterialId = null;
+  renderMatList();
+  showMatEditor(null);
+  populateActiveMaterialSelect();
+  setStatus('Preset deleted');
+});
+
+// Export single preset
+document.getElementById('mat-export-one-btn').addEventListener('click', () => {
+  const m = getMaterialById(editingMaterialId);
+  if (!m) return;
+  const blob = new Blob([JSON.stringify([m], null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = m.name.replace(/[^a-zA-Z0-9_-]/g,'_') + '.material.json';
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+});
+
+// Export all user presets
+document.getElementById('mat-export-all-btn').addEventListener('click', () => {
+  if (userMaterials.length === 0) { alert('No user presets to export.'); return; }
+  const blob = new Blob([JSON.stringify(userMaterials, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = '5xslicer_materials.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  setStatus('Exported ' + userMaterials.length + ' presets');
+});
+
+// Import
+document.getElementById('mat-import-btn').addEventListener('click', () => {
+  document.getElementById('mat-import-file').click();
+});
+document.getElementById('mat-import-file').addEventListener('change', function() {
+  const file = this.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) data = [data];
+      let imported = 0;
+      data.forEach(m => {
+        if (!m.name || !m.type) return;
+        // Re-ID to avoid collisions
+        const id = 'user-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+        m.id = id; m.builtin = false;
+        userMaterials.push(m);
+        imported++;
+      });
+      saveUserMaterials();
+      renderMatList();
+      populateActiveMaterialSelect();
+      setStatus('Imported ' + imported + ' preset(s)');
+    } catch(err) { alert('Failed to parse material JSON: ' + err.message); }
+  };
+  reader.readAsText(file);
+  this.value = '';
+});
+
+// Open/close
+document.getElementById('btn-materials').addEventListener('click', openMaterialsOverlay);
+document.getElementById('btn-open-materials').addEventListener('click', openMaterialsOverlay);
+document.getElementById('mat-overlay-close').addEventListener('click', () => {
+  document.getElementById('materials-overlay').classList.remove('open');
+});
+document.getElementById('materials-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('materials-overlay'))
+    document.getElementById('materials-overlay').classList.remove('open');
+});
+
+// Init materials
+loadUserMaterials();
+populateActiveMaterialSelect();
+
+// ═══════════════════════════════════════════════════════
+//  MOBILE DRAWER SYSTEM
+// ═══════════════════════════════════════════════════════
+
+let openDrawerId = null;
+
+function openDrawer(id) {
+  if (openDrawerId && openDrawerId !== id) closeDrawer(openDrawerId);
+  const drawer = document.getElementById('mob-drawer-' + id);
+  const backdrop = document.getElementById('mob-backdrop');
+  if (!drawer) return;
+
+  // Sync drawer content from desktop panels before opening
+  syncDrawerContent(id);
+
+  drawer.classList.add('open');
+  backdrop.classList.add('active');
+  openDrawerId = id;
+
+  // Mark dock button active
+  document.querySelectorAll('#mob-dock .mob-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('mob-btn-' + id);
+  if (btn) btn.classList.add('active');
+}
+
+function closeDrawer(id) {
+  const drawer = document.getElementById('mob-drawer-' + (id || openDrawerId));
+  const backdrop = document.getElementById('mob-backdrop');
+  if (drawer) drawer.classList.remove('open');
+  backdrop.classList.remove('active');
+  document.querySelectorAll('#mob-dock .mob-btn').forEach(b => b.classList.remove('active'));
+  openDrawerId = null;
+}
+
+// Close on backdrop tap
+document.getElementById('mob-backdrop').addEventListener('click', () => closeDrawer());
+
+// Close buttons inside drawers
+document.querySelectorAll('.mob-drawer-close').forEach(btn => {
+  btn.addEventListener('click', () => closeDrawer(btn.dataset.drawer));
+});
+
+// ── Sync drawer content (clone desktop panel into drawer) ──
+function syncDrawerContent(id) {
+  if (id === 'planes') {
+    const body = document.getElementById('mob-planes-body');
+    // Render plane list + selected plane controls inline
+    body.innerHTML = '';
+    // Clone slicing planes section
+    const src1 = document.querySelector('#left-panel .ps:nth-child(1)');
+    const src2 = document.getElementById('plane-controls');
+    if (src1) body.appendChild(src1.cloneNode(true));
+    if (src2 && src2.style.display !== 'none') body.appendChild(src2.cloneNode(true));
+
+    // Re-wire cloned sliders in drawer
+    ['pz','tilt','rot','blend'].forEach(key => {
+      const clonedSl = body.querySelector('#sl-' + key);
+      const origSl = document.getElementById('sl-' + key);
+      if (!clonedSl || !origSl) return;
+      // Give clone unique id to avoid collision
+      clonedSl.id = 'mob-sl-' + key;
+      clonedSl.value = origSl.value;
+      const valEl = body.querySelector('#val-' + (key === 'pz' ? 'pz' : key === 'tilt' ? 'tilt' : key === 'rot' ? 'rot' : 'blend'));
+      clonedSl.addEventListener('input', function() {
+        origSl.value = this.value;
+        origSl.dispatchEvent(new Event('input'));
+        if (valEl) valEl.textContent = origSl.nextElementSibling ? '' : this.value;
+      });
+    });
+    // Re-wire plane delete buttons
+    body.querySelectorAll('.plane-del').forEach(el => {
+      const idx = parseInt(el.dataset.idx);
+      el.addEventListener('click', () => { deletePlane(idx); closeDrawer(); });
+    });
+    // Re-wire plane select
+    body.querySelectorAll('.plane-item').forEach((div, i) => {
+      div.addEventListener('click', (e) => {
+        if (e.target.classList.contains('plane-del')) return;
+        selectPlane(i);
+        closeDrawer();
+      });
+    });
+  }
+
+  else if (id === 'mat') {
+    const body = document.getElementById('mob-mat-body');
+    body.innerHTML = '';
+    const src = document.querySelector('#left-panel .ps:has(#sel-active-material)');
+    if (src) {
+      const clone = src.cloneNode(true);
+      // Re-wire select
+      const cloneSel = clone.querySelector('#sel-active-material');
+      if (cloneSel) {
+        cloneSel.id = 'mob-sel-active-material';
+        cloneSel.addEventListener('change', function() {
+          activeMaterialId = this.value;
+          document.getElementById('sel-active-material').value = this.value;
+          updateMatSummary();
+        });
+      }
+      // Re-wire manage button
+      const manBtn = clone.querySelector('#btn-open-materials');
+      if (manBtn) { manBtn.removeAttribute('id'); manBtn.addEventListener('click', () => { closeDrawer(); openMaterialsOverlay(); }); }
+      body.appendChild(clone);
+    }
+    // Fallback plain UI if :has() unsupported
+    if (!body.children.length) {
+      body.innerHTML = `<div style="padding:12px">
+        <label class="mc-label" style="display:block;margin-bottom:5px">ACTIVE PRESET</label>
+        <select class="ps-select" id="mob-sel-active-material" style="margin-bottom:10px"></select>
+        <div id="mob-mat-summary" style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7"></div>
+        <button class="btn" style="margin-top:8px" id="mob-mat-manage-btn">⚙ Manage Presets</button>
+      </div>`;
+      const sel = body.querySelector('#mob-sel-active-material');
+      allMaterials().forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id; opt.textContent = (m.builtin ? '⊕ ' : '◈ ') + m.name;
+        if (m.id === activeMaterialId) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', function() {
+        activeMaterialId = this.value;
+        document.getElementById('sel-active-material').value = this.value;
+        updateMatSummary();
+      });
+      const sumEl = body.querySelector('#mob-mat-summary');
+      const m = getMaterialById(activeMaterialId);
+      if (sumEl && m) sumEl.innerHTML = `${m.type} · 🌡 ${m.tempNozzle}°C / ${m.tempBed}°C · ⚡ ${m.spdPrint} mm/s`;
+      const manBtn2 = body.querySelector('#mob-mat-manage-btn');
+      if (manBtn2) manBtn2.addEventListener('click', () => { closeDrawer(); openMaterialsOverlay(); });
+    }
+  }
+
+  else if (id === 'print') {
+    const body = document.getElementById('mob-print-body');
+    body.innerHTML = '';
+    const src = document.querySelector('#left-panel .ps:has(#sl-walls)');
+    if (src) {
+      const clone = src.cloneNode(true);
+      wireClonedSliders(clone, ['walls','top-layers','bot-layers','infill'], body);
+      // Re-wire spiral toggle
+      const spiralChk = clone.querySelector('#chk-spiral');
+      if (spiralChk) {
+        spiralChk.id = 'mob-chk-spiral';
+        spiralChk.addEventListener('change', function() {
+          document.getElementById('chk-spiral').checked = this.checked;
+          document.getElementById('chk-spiral').dispatchEvent(new Event('change'));
+        });
+      }
+      body.appendChild(clone);
+    } else {
+      buildMobPrintFallback(body);
+    }
+  }
+
+  else if (id === 'slicer') {
+    const body = document.getElementById('mob-slicer-body');
+    body.innerHTML = '';
+    // Find slicer settings panel (has sl-lh)
+    const src = document.querySelector('#left-panel .ps:has(#sl-lh)');
+    if (src) {
+      const clone = src.cloneNode(true);
+      wireClonedSliders(clone, ['lh','show-layers'], body);
+      body.appendChild(clone);
+    } else {
+      buildMobSlicerFallback(body);
+    }
+  }
+}
+
+// Helper: re-wire cloned range sliders to their originals
+function wireClonedSliders(clone, keys, body) {
+  keys.forEach(key => {
+    const clonedSl = clone.querySelector('#sl-' + key);
+    const origSl = document.getElementById('sl-' + key);
+    if (!clonedSl || !origSl) return;
+    clonedSl.id = 'mob-sl-' + key;
+    clonedSl.value = origSl.value;
+    clonedSl.addEventListener('input', function() {
+      origSl.value = this.value;
+      origSl.dispatchEvent(new Event('input'));
+    });
+    const valEl = clone.querySelector('#val-' + key);
+    if (valEl) valEl.id = 'mob-val-' + key;
+  });
+  // Select fallback
+  const patSel = clone.querySelector('#sel-infill-pattern');
+  if (patSel) {
+    patSel.id = 'mob-sel-infill-pattern';
+    patSel.addEventListener('change', function() {
+      document.getElementById('sel-infill-pattern').value = this.value;
+      printSettings.infillPattern = this.value;
+    });
+  }
+}
+
+function buildMobPrintFallback(body) {
+  body.innerHTML = `<div class="ps-body">
+    <label>Wall Count <span class="val-display" id="mob-val-walls">${printSettings.walls}</span></label>
+    <input type="range" id="mob-sl-walls" min="1" max="8" value="${printSettings.walls}" step="1">
+    <label>Infill <span class="val-display" id="mob-val-infill">${printSettings.infillPct}%</span></label>
+    <input type="range" id="mob-sl-infill" min="0" max="100" value="${printSettings.infillPct}" step="5">
+    <label>Top Layers <span class="val-display" id="mob-val-top-layers">${printSettings.topLayers}</span></label>
+    <input type="range" id="mob-sl-top-layers" min="0" max="12" value="${printSettings.topLayers}" step="1">
+    <label>Bottom Layers <span class="val-display" id="mob-val-bot-layers">${printSettings.botLayers}</span></label>
+    <input type="range" id="mob-sl-bot-layers" min="0" max="12" value="${printSettings.botLayers}" step="1">
+  </div>`;
+  [['walls','walls'],['infill','infillPct'],['top-layers','topLayers'],['bot-layers','botLayers']].forEach(([key, prop]) => {
+    body.querySelector('#mob-sl-' + key).addEventListener('input', function() {
+      document.getElementById('sl-' + key).value = this.value;
+      document.getElementById('sl-' + key).dispatchEvent(new Event('input'));
+      const v = body.querySelector('#mob-val-' + key);
+      if (v) v.textContent = this.value + (key === 'infill' ? '%' : '');
+    });
+  });
+}
+
+function buildMobSlicerFallback(body) {
+  const lh = document.getElementById('sl-lh').value;
+  const ml = document.getElementById('sl-show-layers').value;
+  body.innerHTML = `<div class="ps-body">
+    <label>Layer Height <span class="val-display" id="mob-val-lh">${parseFloat(lh).toFixed(2)}</span></label>
+    <input type="range" id="mob-sl-lh" min="0.05" max="0.5" value="${lh}" step="0.05">
+    <label>Max Layers <span class="val-display" id="mob-val-show-layers">${ml}</span></label>
+    <input type="range" id="mob-sl-show-layers" min="1" max="200" value="${ml}" step="1">
+  </div>`;
+  [['lh', v => parseFloat(v).toFixed(2)], ['show-layers', v => v]].forEach(([key, fmt]) => {
+    body.querySelector('#mob-sl-' + key).addEventListener('input', function() {
+      document.getElementById('sl-' + key).value = this.value;
+      document.getElementById('sl-' + key).dispatchEvent(new Event('input'));
+      const v = body.querySelector('#mob-val-' + key);
+      if (v) v.textContent = fmt(this.value);
+    });
+  });
+}
+
+// ── Dock button wiring ─────────────────────────────────
+document.getElementById('mob-btn-slice').addEventListener('click', () => {
+  closeDrawer();
+  sliceModel();
+});
+document.getElementById('mob-btn-load').addEventListener('click', () => {
+  closeDrawer();
+  document.getElementById('file-input').click();
+});
+document.getElementById('mob-btn-plane').addEventListener('click', () => {
+  closeDrawer();
+  addPlane();
+});
+document.getElementById('mob-btn-clear').addEventListener('click', () => {
+  closeDrawer();
+  clearContours();
+  setStatus('Contours cleared');
+});
+document.getElementById('mob-btn-machine').addEventListener('click', () => {
+  closeDrawer();
+  openMachineOverlay();
+});
+
+['planes','mat','print','slicer'].forEach(id => {
+  const btn = document.getElementById('mob-btn-' + id);
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (openDrawerId === id) { closeDrawer(); return; }
+    openDrawer(id);
+  });
+});
+
+
 
 // Load demo on start
 loadSTL(generateDemoCylinderSTL());
