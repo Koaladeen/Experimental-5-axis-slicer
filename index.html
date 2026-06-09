@@ -284,7 +284,41 @@
     padding: 4px 7px; margin-top: 5px; line-height: 1.5; display: none;
   }
 
-  /* ── MOBILE ── */
+  /* ── Examples dropdown ── */
+  #examples-dropdown {
+    display: none; position: fixed;
+    background: var(--ui-bg1); border: 2px solid var(--border-hi);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.22);
+    z-index: 100; min-width: 240px; max-width: 300px;
+    flex-direction: column; overflow: hidden;
+  }
+  #examples-dropdown.open { display: flex; }
+  #examples-dropdown .ex-head {
+    background: var(--ui-bg2); border-bottom: 1px solid var(--border);
+    padding: 7px 12px; font-family: var(--mono); font-size: 10px;
+    color: var(--text2); letter-spacing: 0.1em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  #examples-dropdown .ex-close {
+    background: none; border: none; color: var(--text3); font-size: 16px;
+    cursor: pointer; padding: 0; line-height: 1;
+  }
+  #examples-dropdown .ex-close:hover { color: var(--red); }
+  #ex-list { overflow-y: auto; max-height: 320px; padding: 4px; }
+  .ex-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; cursor: pointer;
+    border: 1px solid transparent; border-radius: 2px;
+    transition: background 0.1s, border-color 0.1s; margin-bottom: 2px;
+  }
+  .ex-item:hover { background: var(--ui-bg3); border-color: var(--border); }
+  .ex-item.loading { opacity: 0.5; pointer-events: none; }
+  .ex-icon { font-size: 18px; flex-shrink: 0; }
+  .ex-name { font-family: var(--mono); font-size: 11px; color: var(--text0); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ex-size { font-family: var(--mono); font-size: 9px; color: var(--text3); flex-shrink: 0; }
+  #ex-status { padding: 8px 12px; font-family: var(--mono); font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+
   @media (max-width: 900px) {
 
     #header { flex-wrap: nowrap; overflow: hidden; }
@@ -498,6 +532,7 @@
   <div class="logo-block">5X<span>·SLICER</span></div>
   <div class="tb-group">
     <button class="tb-btn primary" id="btn-load">⬆ Load STL</button>
+    <button class="tb-btn" id="btn-examples">☰ Examples</button>
     <input type="file" id="file-input" accept=".stl" style="display:none">
   </div>
   <div class="tb-group">
@@ -506,6 +541,9 @@
   <div class="tb-group">
     <button class="tb-btn primary" id="btn-slice">▶ Slice</button>
     <button class="tb-btn danger" id="btn-clear-contours">✕ Clear</button>
+  </div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btn-export-gcode" disabled>⬇ Export G-code</button>
   </div>
   <div class="tb-group">
     <button class="tb-btn" id="btn-machine">⚙ Machine</button>
@@ -647,6 +685,7 @@
   <div id="mob-dock">
     <button class="mob-btn primary" id="mob-btn-slice" title="Slice">▶<span>SLICE</span></button>
     <button class="mob-btn" id="mob-btn-load" title="Load STL">⬆<span>STL</span></button>
+    <button class="mob-btn" id="mob-btn-examples" title="Examples">☰<span>EX</span></button>
     <button class="mob-btn" id="mob-btn-plane" title="Add Plane">✦<span>PLANE</span></button>
     <div class="mob-divider"></div>
     <button class="mob-btn" id="mob-btn-planes" title="Planes">☰<span>PLANES</span></button>
@@ -655,6 +694,7 @@
     <button class="mob-btn" id="mob-btn-slicer" title="Slicer Settings">≡<span>SLICER</span></button>
     <div class="mob-divider"></div>
     <button class="mob-btn" id="mob-btn-machine" title="Machine">⚙<span>MCH</span></button>
+    <button class="mob-btn" id="mob-btn-gcode" title="Export G-code" style="opacity:0.4">⬇<span>GCODE</span></button>
     <button class="mob-btn" id="mob-btn-clear" title="Clear" style="color:var(--red)">✕<span>CLEAR</span></button>
   </div>
 
@@ -716,6 +756,18 @@
 
 </div><!-- #body -->
 </div><!-- #app -->
+
+<!-- EXAMPLES DROPDOWN -->
+<div id="examples-dropdown">
+  <div class="ex-head">
+    <span>Example STLs · GitHub</span>
+    <button class="ex-close" id="ex-close-btn">✕</button>
+  </div>
+  <div id="ex-list">
+    <div style="padding:16px;font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center">Loading…</div>
+  </div>
+  <div id="ex-status"></div>
+</div>
 
 <!-- MATERIALS OVERLAY -->
 <div class="modal-overlay" id="materials-overlay">
@@ -1511,186 +1563,594 @@ document.getElementById('sl-blend').addEventListener('input', function() {
   renderPlaneList();
 });
 
-// ── SLICER ────────────────────────────────────────────
-// For each chunk: intersect the chunk geometry with parallel planes
-// in the chunk's slice direction, extract contour loops, draw as lines.
+// ═══════════════════════════════════════════════════════
+//  SLICER CORE  (3-axis, proper loop-stitching)
+// ═══════════════════════════════════════════════════════
+
+// sliceData: array of layer objects built during slicing,
+// used for both visualisation and G-code export.
+// Each entry: { z, loops: [[{x,y},...]], walls: [[[{x,y},...]]],
+//               infillLines: [[{x,y},{x,y},...]], isFirst }
+let sliceData = [];
 
 function clearContours() {
   contourLines.forEach(l => scene.remove(l));
   contourLines = [];
   contourByLayer = [];
+  sliceData = [];
   currentLayerView = -1;
   document.getElementById('layer-slider-bar').classList.remove('active');
+  document.getElementById('btn-export-gcode').disabled = true;
+  const mobGcodeBtn = document.getElementById('mob-btn-gcode');
+  if (mobGcodeBtn) { mobGcodeBtn.style.opacity = '0.4'; mobGcodeBtn.disabled = true; }
 }
 
+// ── Raw intersection: triangle mesh × horizontal plane at Z=d ──
+// Returns unordered array of [Vector3, Vector3] edge segments.
+function intersectMeshAtZ(triVerts, d) {
+  const EPS = 1e-9;
+  const segments = [];
+  for (const [a, b, c] of triVerts) {
+    const da = a.z - d, db = b.z - d, dc = c.z - d;
+    const pts = [];
+    const tryEdge = (p, q, dp, dq) => {
+      if ((dp < -EPS && dq > EPS) || (dp > EPS && dq < -EPS)) {
+        const t = dp / (dp - dq);
+        pts.push(new THREE.Vector3(p.x + t*(q.x-p.x), p.y + t*(q.y-p.y), d));
+      } else if (Math.abs(dp) <= EPS && Math.abs(dq) > EPS) {
+        pts.push(p.clone());
+      }
+    };
+    tryEdge(a, b, da, db);
+    tryEdge(b, c, db, dc);
+    tryEdge(c, a, dc, da);
+    // Deduplicate same-point pairs
+    const unique = [];
+    for (const pt of pts) {
+      if (!unique.some(u => u.distanceToSquared(pt) < 1e-10)) unique.push(pt);
+    }
+    if (unique.length >= 2) segments.push([unique[0], unique[1]]);
+  }
+  return segments;
+}
+
+// ── Stitch unordered segments into closed polyloops ──
+// Tolerance: endpoints within SNAP_D mm are considered the same vertex.
+const SNAP_D = 0.02;
+const SNAP_D2 = SNAP_D * SNAP_D;
+
+function stitchSegments(segments) {
+  if (segments.length === 0) return [];
+
+  // Build adjacency: for each segment endpoint find connected segments
+  // Use a simple list-scan approach (good enough for slicer-scale meshes)
+  const used = new Uint8Array(segments.length);
+  const loops = [];
+
+  for (let start = 0; start < segments.length; start++) {
+    if (used[start]) continue;
+    used[start] = 1;
+
+    const loop = [
+      { x: segments[start][0].x, y: segments[start][0].y },
+      { x: segments[start][1].x, y: segments[start][1].y },
+    ];
+
+    // Walk forward from loop tail
+    let extended = true;
+    while (extended) {
+      extended = false;
+      const tail = loop[loop.length - 1];
+      for (let i = 0; i < segments.length; i++) {
+        if (used[i]) continue;
+        const [p0, p1] = segments[i];
+        const d0 = (p0.x-tail.x)**2 + (p0.y-tail.y)**2;
+        const d1 = (p1.x-tail.x)**2 + (p1.y-tail.y)**2;
+        if (d0 < SNAP_D2) {
+          loop.push({ x: p1.x, y: p1.y });
+          used[i] = 1; extended = true; break;
+        } else if (d1 < SNAP_D2) {
+          loop.push({ x: p0.x, y: p0.y });
+          used[i] = 1; extended = true; break;
+        }
+      }
+    }
+
+    // Check if closed (tail connects back to head)
+    const head = loop[0], tail = loop[loop.length - 1];
+    const closed = (head.x-tail.x)**2 + (head.y-tail.y)**2 < SNAP_D2 * 4;
+    if (closed && loop.length > 2) {
+      loop.pop(); // remove duplicate endpoint
+      loops.push(loop);
+    } else if (loop.length >= 2) {
+      // Open chain — still add, will be drawn but not offset
+      loops.push(loop);
+    }
+  }
+  return loops;
+}
+
+// ── Polygon area (shoelace, signed) ──
+function polyArea(pts) {
+  let a = 0;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    a += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
+  }
+  return a * 0.5;
+}
+
+// Ensure CCW winding (positive area) for outer loops
+function ensureCCW(pts) {
+  if (polyArea(pts) < 0) pts.reverse();
+  return pts;
+}
+
+// ── Polygon inward offset (Minkowski shrink) ──
+// Simple vertex-normal based offset — good enough for convex/mildly concave shapes.
+// offset > 0 = shrink inward (for inner walls).
+function offsetPolygon(pts, offset) {
+  const n = pts.length;
+  if (n < 3) return [];
+  const result = [];
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i + n - 1) % n];
+    const curr = pts[i];
+    const next = pts[(i + 1) % n];
+    // Edge normals (inward = left of CCW edge = pointing right of direction)
+    const e1x = curr.x - prev.x, e1y = curr.y - prev.y;
+    const l1 = Math.hypot(e1x, e1y) || 1;
+    const n1x = e1y / l1, n1y = -e1x / l1; // inward normal of incoming edge
+
+    const e2x = next.x - curr.x, e2y = next.y - curr.y;
+    const l2 = Math.hypot(e2x, e2y) || 1;
+    const n2x = e2y / l2, n2y = -e2x / l2; // inward normal of outgoing edge
+
+    // Bisector
+    let bx = n1x + n2x, by = n1y + n2y;
+    const bl = Math.hypot(bx, by);
+    if (bl < 1e-9) { bx = n1x; by = n1y; }
+    else { bx /= bl; by /= bl; }
+
+    // Scale bisector so offset along each edge normal = offset
+    const dot = n1x * bx + n1y * by;
+    const scale = Math.abs(dot) < 0.15 ? offset / 0.15 : offset / dot; // clamp miter
+    result.push({ x: curr.x + bx * scale, y: curr.y + by * scale });
+  }
+  // Validate: if area shrank too much or inverted, discard
+  const origA = Math.abs(polyArea(pts));
+  const newA = Math.abs(polyArea(result));
+  if (newA < origA * 0.02 || newA > origA * 1.5) return []; // collapsed or exploded
+  return result;
+}
+
+// ── Rectilinear infill lines for a polygon at given angle ──
+// Returns array of [[{x,y},{x,y}], ...] clipped line segments.
+function infillLines(outerLoop, spacing, angle, z) {
+  if (outerLoop.length < 3) return [];
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+
+  // Rotate polygon into infill frame
+  const rot = pts => pts.map(p => ({
+    u:  p.x * cos + p.y * sin,
+    v: -p.x * sin + p.y * cos,
+  }));
+  const unrot = (u, v) => ({
+    x: u * cos - v * sin,
+    y: u * sin + v * cos,
+  });
+
+  const rPoly = rot(outerLoop);
+  const uMin = Math.min(...rPoly.map(p => p.u));
+  const uMax = Math.max(...rPoly.map(p => p.u));
+  const vMin = Math.min(...rPoly.map(p => p.v));
+  const vMax = Math.max(...rPoly.map(p => p.v));
+
+  const lines = [];
+  for (let u = uMin + spacing * 0.5; u <= uMax; u += spacing) {
+    // Clip infinite horizontal line u=const against the polygon
+    const intersections = [];
+    const n = rPoly.length;
+    for (let i = 0; i < n; i++) {
+      const a = rPoly[i], b = rPoly[(i+1)%n];
+      if ((a.u <= u && b.u > u) || (b.u <= u && a.u > u)) {
+        const t = (u - a.u) / (b.u - a.u);
+        intersections.push(a.v + t * (b.v - a.v));
+      }
+    }
+    intersections.sort((a, b) => a - b);
+    for (let k = 0; k + 1 < intersections.length; k += 2) {
+      lines.push([
+        { ...unrot(u, intersections[k]),   z },
+        { ...unrot(u, intersections[k+1]), z },
+      ]);
+    }
+  }
+  return lines;
+}
+
+// ── Main slice function ────────────────────────────────
 function sliceModel() {
   clearContours();
   if (!loadedGeometry) { setStatus('Load a model first'); return; }
 
-  const layerHeight = parseFloat(document.getElementById('sl-lh').value);
-  const maxLayers = parseInt(document.getElementById('sl-show-layers').value);
-  const sorted = [...planes].sort((a, b) => a.pos - b.pos);
-  const numChunks = sorted.length + 1;
+  const layerHeight  = parseFloat(document.getElementById('sl-lh').value);
+  const maxLayers    = parseInt(document.getElementById('sl-show-layers').value);
+  const nozzleDia    = machineConfig.nozzleDiameter || 0.4;
+  const lineWidth    = nozzleDia * ((getMaterialById(activeMaterialId).lineWidth || 100) / 100);
+  const wallCount    = printSettings.spiral ? 1 : printSettings.walls;
+  const infillPct    = printSettings.spiral ? 0 : printSettings.infillPct;
+  const infillSpacing = infillPct > 0 ? lineWidth / (infillPct / 100) : Infinity;
+
+  // For now only 3-axis (no planes tilt): always slice along Z
+  const positions = loadedGeometry.attributes.position.array;
+  const numTris = positions.length / 9;
+  const triVerts = [];
+  for (let t = 0; t < numTris; t++) {
+    const b = t * 9;
+    triVerts.push([
+      new THREE.Vector3(positions[b],   positions[b+1], positions[b+2]),
+      new THREE.Vector3(positions[b+3], positions[b+4], positions[b+5]),
+      new THREE.Vector3(positions[b+6], positions[b+7], positions[b+8]),
+    ]);
+  }
+
+  const bb = loadedGeometry.boundingBox;
+  const zMin = bb.min.z, zMax = bb.max.z;
+  const numLayers = Math.min(maxLayers, Math.ceil((zMax - zMin) / layerHeight));
 
   setStatus('Slicing…');
+  document.getElementById('btn-export-gcode').disabled = true;
 
-  setTimeout(() => {
-    let totalContours = 0;
-    let globalLayerIdx = 0;
-    const positions = loadedGeometry.attributes.position.array;
-    const numTris = positions.length / 9;
+  // Slice in a chunked setTimeout to keep UI responsive
+  sliceData = [];
+  let layerIdx = 0;
+  let infillAngle = Math.PI / 4; // 45° alternating
 
-    for (let ci = 0; ci < numChunks; ci++) {
-      // This chunk's "home" normal — the direction it prints in away from the transition
-      const lowerPlane = ci > 0 ? sorted[ci - 1] : null;
-      const upperPlane = ci < sorted.length ? sorted[ci] : null;
-      const homeNormal = lowerPlane ? getPlaneNormal(lowerPlane) : new THREE.Vector3(0, 0, 1);
+  const processChunk = () => {
+    const CHUNK = 20; // layers per frame
+    const end = Math.min(layerIdx + CHUNK, numLayers);
 
-      // Collect triangles for this chunk
-      const triVerts = [];
-      for (let t = 0; t < numTris; t++) {
-        if (classifyTriangle(positions, t, sorted) !== ci) continue;
-        const base = t * 9;
-        triVerts.push([
-          new THREE.Vector3(positions[base],   positions[base+1],   positions[base+2]),
-          new THREE.Vector3(positions[base+3], positions[base+4],   positions[base+5]),
-          new THREE.Vector3(positions[base+6], positions[base+7],   positions[base+8]),
-        ]);
+    for (; layerIdx < end; layerIdx++) {
+      const z = zMin + (layerIdx + 1) * layerHeight;
+      const isFirst = layerIdx === 0;
+
+      // 1. Raw intersection segments
+      const segs = intersectMeshAtZ(triVerts, z);
+      if (segs.length === 0) continue;
+
+      // 2. Stitch into loops
+      const rawLoops = stitchSegments(segs);
+      if (rawLoops.length === 0) continue;
+
+      // Ensure CCW winding on outer loops (largest area first)
+      const loops = rawLoops
+        .filter(l => l.length >= 3)
+        .sort((a, b) => Math.abs(polyArea(b)) - Math.abs(polyArea(a)));
+      loops.forEach(l => ensureCCW(l));
+
+      // 3. Wall offsets (inner perimeters)
+      const walls = [loops]; // walls[0] = outer, walls[1..] = inner
+      if (!printSettings.spiral) {
+        for (let w = 1; w < wallCount; w++) {
+          const prevWall = walls[w - 1];
+          const thisWall = prevWall
+            .map(loop => offsetPolygon(loop, lineWidth * w))
+            .filter(l => l.length >= 3);
+          if (thisWall.length === 0) break;
+          walls.push(thisWall);
+        }
       }
-      if (triVerts.length === 0) continue;
 
-      // Bounding extent along home normal
-      let dMin = Infinity, dMax = -Infinity;
-      triVerts.forEach(tri => {
-        tri.forEach(v => {
-          const d = v.dot(homeNormal);
-          if (d < dMin) dMin = d;
-          if (d > dMax) dMax = d;
-        });
+      // 4. Infill — use innermost wall as boundary
+      let infillLoops = walls[walls.length - 1];
+      const layerInfillLines = [];
+      if (infillPct > 0 && infillLoops.length > 0) {
+        // Offset one more lineWidth inward for infill boundary
+        const infillBounds = infillLoops
+          .map(l => offsetPolygon(l, lineWidth * 0.5))
+          .filter(l => l.length >= 3);
+        const angle = infillAngle + (layerIdx % 2 === 0 ? 0 : Math.PI / 2);
+        for (const loop of (infillBounds.length ? infillBounds : infillLoops)) {
+          layerInfillLines.push(...infillLines(loop, infillSpacing, angle, z));
+        }
+      }
+
+      // 5. Store in sliceData
+      sliceData.push({
+        z, layerIdx, isFirst,
+        loops,   // outer contours (array of point arrays)
+        walls,   // [outer, inner1, inner2, ...]
+        infillLines: layerInfillLines,
       });
 
-      const color = CHUNK_COLORS[ci % CHUNK_COLORS.length];
-
-      // Blend zone info for UPPER boundary of this chunk (transition into next chunk)
-      // When approaching the upper plane, we interpolate toward the upper chunk's normal
-      const upperBlend = upperPlane ? upperPlane.blendMm || 0 : 0;
-      const upperNormal = upperPlane ? getPlaneNormal(upperPlane) : null;
-      // The upper plane's position projected onto homeNormal
-      const upperDPos = upperPlane ? upperPlane.pos : Infinity;
-
-      // Blend zone for LOWER boundary (coming from previous chunk)
-      const lowerBlend = lowerPlane ? lowerPlane.blendMm || 0 : 0;
-      const lowerNormal = lowerPlane ? (ci > 1 ? getPlaneNormal(sorted[ci-2]) : new THREE.Vector3(0,0,1)) : null;
-      const lowerDPos = lowerPlane ? lowerPlane.pos : -Infinity;
-
-      let layerCount = 0;
-
-      for (let d = dMin + layerHeight; d <= dMax; d += layerHeight) {
-        if (layerCount++ > maxLayers) break;
-
-        // Determine the interpolated normal for this layer
-        let layerNormal = homeNormal.clone();
-
-        // Upper blend: as d approaches upperDPos from below, lerp toward upperNormal
-        if (upperNormal && upperBlend > 0) {
-          const distToUpper = upperDPos - d;
-          if (distToUpper < upperBlend && distToUpper >= 0) {
-            const t = 1 - (distToUpper / upperBlend); // 0 at blend start, 1 at plane
-            const tSmooth = t * t * (3 - 2 * t); // smoothstep
-            layerNormal = new THREE.Vector3().lerpVectors(homeNormal, upperNormal, tSmooth).normalize();
-          }
-        }
-
-        // Lower blend: as d is near lowerDPos from above, lerp back from lowerNormal
-        if (lowerNormal && lowerBlend > 0) {
-          const distFromLower = d - lowerDPos;
-          if (distFromLower < lowerBlend && distFromLower >= 0) {
-            const t = distFromLower / lowerBlend; // 0 at plane, 1 at blend end
-            const tSmooth = t * t * (3 - 2 * t);
-            layerNormal = new THREE.Vector3().lerpVectors(lowerNormal, homeNormal, tSmooth).normalize();
-          }
-        }
-
-        // Intersect triangles with the (possibly tilted) layer plane at distance d
-        // along the layer normal — plane equation: layerNormal · x = d_adj
-        // We re-project d from homeNormal space to layerNormal space via the layer centroid
-        // Simple approach: use d directly since normals are close and this is a visual tool
-        const segments = intersectMeshWithPlane(triVerts, layerNormal, d);
-        if (segments.length === 0) continue;
-
-        const pts = [];
-        segments.forEach(seg => { pts.push(seg[0], seg[1]); });
-        const geo = new THREE.BufferGeometry().setFromPoints(pts);
-
-        // Colour: in blend zone shift toward yellow to make transition visible
-        let lineColor = color;
-        const inUpperBlend = upperNormal && upperBlend > 0 && (upperDPos - d) < upperBlend && (upperDPos - d) >= 0;
-        const inLowerBlend = lowerNormal && lowerBlend > 0 && (d - lowerDPos) < lowerBlend && (d - lowerDPos) >= 0;
-        if (inUpperBlend || inLowerBlend) lineColor = 0xf0c040; // yellow = transition zone
-
-        const mat = new THREE.LineBasicMaterial({ color: lineColor, transparent: true, opacity: 0.9 });
-        const line = new THREE.LineSegments(geo, mat);
-        line.userData.layerIdx = globalLayerIdx;
-        line.userData.chunkIdx = ci;
-        scene.add(line);
-        contourLines.push(line);
-        contourByLayer.push({ line, layerIdx: globalLayerIdx, chunkIdx: ci });
-        totalContours++;
-        globalLayerIdx++;
-      }
+      // 6. Visualise
+      drawLayerVisuals(sliceData[sliceData.length - 1]);
     }
 
-    // Activate layer slider
-    const totalLayers = globalLayerIdx;
-    const slLayer = document.getElementById('sl-layer');
-    slLayer.max = Math.max(0, totalLayers - 1);
-    slLayer.value = Math.max(0, totalLayers - 1);
-    document.getElementById('lsb-cur').textContent = Math.max(0, totalLayers - 1);
-    document.getElementById('lsb-total').textContent = '/ ' + Math.max(0, totalLayers - 1);
-    updateLayerSliderFill();
-    if (totalLayers > 0) {
-      document.getElementById('layer-slider-bar').classList.add('active');
-      currentLayerView = -1; // start showing all
-      setLayerView(-1);
+    if (layerIdx < numLayers) {
+      setStatus(`Slicing… ${Math.round(layerIdx / numLayers * 100)}%`);
+      setTimeout(processChunk, 0);
+    } else {
+      finaliseSlice();
     }
+  };
 
-    setStatus(`Sliced · ${totalLayers} layers · yellow = blend zones`);
-  }, 10);
+  setTimeout(processChunk, 10);
 }
 
-// Intersect a set of triangles with plane n·x = d
-// Returns array of [Vector3, Vector3] segments
-function intersectMeshWithPlane(triVerts, n, d) {
-  const segments = [];
-  triVerts.forEach(([a, b, c]) => {
-    const da = a.dot(n) - d;
-    const db = b.dot(n) - d;
-    const dc = c.dot(n) - d;
+// ── Draw Three.js lines for one layer ─────────────────
+function drawLayerVisuals(ld) {
+  const zOffset = 0.05; // lift lines slightly above layer surface
+  const z = ld.z + zOffset;
+
+  const addLoop = (pts, color, opacity) => {
+    if (pts.length < 2) return;
+    const threePoints = pts.map(p => new THREE.Vector3(p.x, p.y, z));
+    threePoints.push(threePoints[0].clone()); // close loop
+    const geo = new THREE.BufferGeometry().setFromPoints(threePoints);
+    const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    const line = new THREE.Line(geo, mat); // Line not LineSegments — connected polyline
+    line.userData.layerIdx = ld.layerIdx;
+    scene.add(line);
+    contourLines.push(line);
+    contourByLayer.push({ line, layerIdx: ld.layerIdx });
+  };
+
+  const addSegments = (segs, color, opacity) => {
+    if (segs.length === 0) return;
     const pts = [];
-    if (Math.sign(da) !== Math.sign(db) || da === 0) {
-      const t = da / (da - db);
-      if (isFinite(t) && t >= 0 && t <= 1) {
-        pts.push(new THREE.Vector3().lerpVectors(a, b, t));
-      }
-    }
-    if (Math.sign(db) !== Math.sign(dc) || db === 0) {
-      const t = db / (db - dc);
-      if (isFinite(t) && t >= 0 && t <= 1) {
-        pts.push(new THREE.Vector3().lerpVectors(b, c, t));
-      }
-    }
-    if (Math.sign(dc) !== Math.sign(da) || dc === 0) {
-      const t = dc / (dc - da);
-      if (isFinite(t) && t >= 0 && t <= 1) {
-        pts.push(new THREE.Vector3().lerpVectors(c, a, t));
-      }
-    }
-    if (pts.length >= 2) {
-      segments.push([pts[0], pts[1]]);
-    }
-  });
-  return segments;
+    segs.forEach(([a, b]) => { pts.push(new THREE.Vector3(a.x, a.y, z), new THREE.Vector3(b.x, b.y, z)); });
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    const line = new THREE.LineSegments(geo, mat);
+    line.userData.layerIdx = ld.layerIdx;
+    scene.add(line);
+    contourLines.push(line);
+    contourByLayer.push({ line, layerIdx: ld.layerIdx });
+  };
+
+  // Outer wall — white/bright
+  ld.walls[0].forEach(loop => addLoop(loop, 0xffffff, 0.95));
+  // Inner walls — cyan tint
+  for (let w = 1; w < ld.walls.length; w++) {
+    ld.walls[w].forEach(loop => addLoop(loop, 0x44ddff, 0.75));
+  }
+  // Infill — yellow/amber, dimmer
+  if (ld.infillLines.length > 0) addSegments(ld.infillLines, 0xf0c040, 0.5);
 }
+
+// ── Finalise after all layers done ────────────────────
+function finaliseSlice() {
+  const totalLayers = sliceData.length;
+  if (totalLayers === 0) { setStatus('Sliced — no geometry found'); return; }
+
+  const slLayer = document.getElementById('sl-layer');
+  slLayer.max = Math.max(0, totalLayers - 1);
+  slLayer.value = Math.max(0, totalLayers - 1);
+  document.getElementById('lsb-cur').textContent = totalLayers - 1;
+  document.getElementById('lsb-total').textContent = '/ ' + (totalLayers - 1);
+  updateLayerSliderFill();
+  document.getElementById('layer-slider-bar').classList.add('active');
+  currentLayerView = -1;
+  setLayerView(-1);
+  document.getElementById('btn-export-gcode').disabled = false;
+  const mobGcode = document.getElementById('mob-btn-gcode');
+  if (mobGcode) { mobGcode.style.opacity = '1'; mobGcode.disabled = false; }
+
+  const totalWalls = sliceData.reduce((s, l) => s + l.walls.flat().length, 0);
+  const totalInfill = sliceData.reduce((s, l) => s + l.infillLines.length, 0);
+  setStatus(`Sliced · ${totalLayers} layers · ${totalWalls} wall loops · ${totalInfill} infill lines`);
+}
+
+// ═══════════════════════════════════════════════════════
+//  G-CODE EXPORT
+// ═══════════════════════════════════════════════════════
+
+function generateGcode() {
+  if (sliceData.length === 0) return null;
+  const mat  = getMaterialById(activeMaterialId);
+  const cfg  = machineConfig;
+  const ps   = printSettings;
+  const lh   = parseFloat(document.getElementById('sl-lh').value);
+  const nozzleDia = cfg.nozzleDiameter || 0.4;
+  const lineWidth = nozzleDia * ((mat.lineWidth || 100) / 100);
+  const filamentDia = 1.75;
+  const filamentArea = Math.PI * (filamentDia / 2) ** 2;
+  const isKlipper = (cfg.gcodeFlavor || 'klipper') === 'klipper';
+
+  // Extrusion volume per mm of travel: cross-section of bead
+  const beadArea = lineWidth * lh;
+  const ePerMm = (beadArea / filamentArea) * ((mat.flow || 100) / 100);
+  const ePerMmFirst = (beadArea / filamentArea) * ((mat.flowFirst || 100) / 100);
+
+  let E = 0;
+  const lines = [];
+  const w = (...args) => lines.push(...args);
+  const f3 = v => v.toFixed(3);
+  const f2 = v => v.toFixed(2);
+
+  // ── Header ──
+  w('; ============================================================');
+  w(`; Generated by 5X·SLICER`);
+  w(`; Material : ${mat.name} (${mat.type})`);
+  w(`; Layer H  : ${lh} mm   Line W: ${f3(lineWidth)} mm`);
+  w(`; Walls    : ${ps.spiral ? '1 (spiral)' : ps.walls}   Infill: ${ps.spiral ? 'none (spiral)' : ps.infillPct + '%'}`);
+  w(`; Layers   : ${sliceData.length}`);
+  w(`; Nozzle   : ${cfg.nozzleDiameter || 0.4} mm`);
+  w('; ============================================================');
+  w('');
+
+  if (isKlipper) {
+    w('; --- Klipper start ---');
+    w('G28                      ; home all axes');
+    w('G90                      ; absolute positioning');
+    w('M82                      ; absolute extrusion');
+    if (mat.tempBed > 0) {
+      w(`M140 S${mat.tempBed1st}              ; bed temp (no wait)`);
+      w(`M190 S${mat.tempBed1st}              ; wait bed temp`);
+    }
+    w(`M104 S${mat.tempNozzle1st}             ; nozzle temp (no wait)`);
+    w(`M109 S${mat.tempNozzle1st}             ; wait nozzle temp`);
+    if (mat.gcodeStart) w(mat.gcodeStart);
+    w('G92 E0                   ; reset extruder');
+    // Purge line
+    w('; --- purge line ---');
+    w(`G1 X-5 Y0 Z0.3 F${mat.spdTravel * 60}`);
+    w(`G1 X-5 Y40 E4.0 F${mat.spdFirst * 60}`);
+    w('G92 E0');
+  } else {
+    // Marlin
+    w('; --- Marlin start ---');
+    w('G28');
+    w('G90');
+    w('M82');
+    if (mat.tempBed > 0)  w(`M190 S${mat.tempBed1st}`);
+    w(`M109 S${mat.tempNozzle1st}`);
+    if (mat.gcodeStart) w(mat.gcodeStart);
+    w('G92 E0');
+    w(`G1 X-5 Y0 Z0.3 F${mat.spdTravel * 60}`);
+    w(`G1 X-5 Y40 E4.0 F${mat.spdFirst * 60}`);
+    w('G92 E0');
+  }
+  w('');
+
+  let curX = -5, curY = 40, curZ = 0;
+  let curFeed = mat.spdFirst * 60;
+  let coolingStarted = false;
+  const retractDist = mat.retractDist || 0;
+  const retractSpd  = (mat.retractSpd || 45) * 60;
+  const travelSpd   = mat.spdTravel * 60;
+  let retracted = false;
+
+  const retract = () => {
+    if (retracted || retractDist <= 0) return;
+    w(`G1 E${f3(E - retractDist)} F${retractSpd} ; retract`);
+    E -= retractDist;
+    retracted = true;
+  };
+  const unretract = () => {
+    if (!retracted || retractDist <= 0) return;
+    w(`G1 E${f3(E + retractDist)} F${retractSpd} ; unretract`);
+    E += retractDist;
+    retracted = false;
+  };
+
+  const moveTo = (x, y, z, feed, comment) => {
+    const parts = [`G1 X${f3(x)} Y${f3(y)}`];
+    if (Math.abs(z - curZ) > 0.001) parts.push(`Z${f3(z)}`);
+    parts.push(`F${Math.round(feed)}`);
+    if (comment) parts.push(`; ${comment}`);
+    w(parts.join(' '));
+    curX = x; curY = y; curZ = z; curFeed = feed;
+  };
+
+  const travel = (x, y, z) => {
+    retract();
+    if (mat.zHop > 0) w(`G1 Z${f3(curZ + mat.zHop)} F${travelSpd} ; zhop`);
+    moveTo(x, y, z, travelSpd, 'travel');
+    if (mat.zHop > 0) w(`G1 Z${f3(z)} F${travelSpd} ; descend`);
+    unretract();
+  };
+
+  const extrudeTo = (x, y, z, feed, ePer) => {
+    const dist = Math.hypot(x - curX, y - curY, z - curZ);
+    if (dist < 0.001) return;
+    E += dist * ePer;
+    w(`G1 X${f3(x)} Y${f3(y)} E${f3(E)} F${Math.round(feed)}`);
+    curX = x; curY = y; curZ = z; curFeed = feed;
+  };
+
+  const printLoop = (pts, z, feed, ePer) => {
+    if (pts.length < 2) return;
+    // Travel to start
+    travel(pts[0].x, pts[0].y, z);
+    // Print loop
+    for (let i = 1; i < pts.length; i++) {
+      extrudeTo(pts[i].x, pts[i].y, z, feed, ePer);
+    }
+    extrudeTo(pts[0].x, pts[0].y, z, feed, ePer); // close
+  };
+
+  // ── Layer loop ──
+  for (const ld of sliceData) {
+    const isFirst = ld.isFirst;
+    const wallFeed   = (isFirst ? mat.spdFirst : mat.spdWall) * 60;
+    const infillFeed = (isFirst ? mat.spdFirst : mat.spdInfill) * 60;
+    const ePer = isFirst ? ePerMmFirst : ePerMm;
+
+    // Layer change — move Z first, then set temp changes
+    w('');
+    w(`; --- Layer ${ld.layerIdx + 1} / ${sliceData.length}  Z=${f3(ld.z)} ---`);
+
+    // Cooling fan
+    if (!coolingStarted && ld.layerIdx >= mat.fanLayer) {
+      w(`M106 S${Math.round(mat.fanMax * 2.55)} ; fan on`);
+      coolingStarted = true;
+    }
+    // Mid-print temp (drop from first-layer temp)
+    if (ld.layerIdx === 1) {
+      w(`M104 S${mat.tempNozzle} ; drop to print temp`);
+      if (mat.tempBed > 0) w(`M140 S${mat.tempBed} ; drop bed temp`);
+    }
+
+    // Spiral mode: only outer wall, no close, continuous Z
+    if (ps.spiral) {
+      for (const loop of ld.walls[0]) {
+        travel(loop[0].x, loop[0].y, ld.z);
+        for (let i = 1; i < loop.length; i++) {
+          extrudeTo(loop[i].x, loop[i].y, ld.z, wallFeed, ePer);
+        }
+        // No close — spiral continues on next layer
+      }
+      continue;
+    }
+
+    // Inner walls first (better quality outer surface)
+    for (let w2 = ld.walls.length - 1; w2 >= 0; w2--) {
+      const feed = w2 === 0 ? wallFeed : wallFeed * 0.9;
+      for (const loop of ld.walls[w2]) {
+        printLoop(loop, ld.z, feed, ePer);
+      }
+    }
+
+    // Infill
+    for (const seg of ld.infillLines) {
+      travel(seg[0].x, seg[0].y, ld.z);
+      extrudeTo(seg[1].x, seg[1].y, ld.z, infillFeed, ePer);
+    }
+  }
+
+  // ── Footer ──
+  w('');
+  w('; --- end of print ---');
+  retract();
+  w(`G1 Z${f3(curZ + 10)} F${travelSpd} ; lift`);
+  w(`G1 X0 Y${f3(Math.max(curY + 20, 20))} F${travelSpd} ; present`);
+  w('M104 S0 ; nozzle off');
+  if (mat.tempBed > 0) w('M140 S0 ; bed off');
+  w('M106 S0 ; fan off');
+  if (mat.gcodeEnd) w(mat.gcodeEnd);
+  w('M84     ; motors off');
+  w('');
+  w(`; Total E: ${f3(E)} mm   ${f3(E * Math.PI * (filamentDia/2)**2 / 1000)} cm³`);
+
+  return lines.join('\n');
+}
+
+document.getElementById('btn-export-gcode').addEventListener('click', () => {
+  const gcode = generateGcode();
+  if (!gcode) return;
+  const blob = new Blob([gcode], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const matName = getMaterialById(activeMaterialId).name.replace(/[^a-zA-Z0-9_-]/g, '_');
+  a.download = `slice_${matName}.gcode`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  setStatus(`G-code exported · ${sliceData.length} layers`);
+});
 
 // ── Layer view control ────────────────────────────────
 function setLayerView(layerIdx) {
@@ -2590,7 +3050,172 @@ document.getElementById('materials-overlay').addEventListener('click', e => {
     document.getElementById('materials-overlay').classList.remove('open');
 });
 
-// Init materials
+// ═══════════════════════════════════════════════════════
+//  EXAMPLE STLs  (fetched from GitHub)
+// ═══════════════════════════════════════════════════════
+
+const EXAMPLES_API = 'https://api.github.com/repos/Koaladeen/Experimental-5-axis-slicer/contents/Stls';
+const EXAMPLES_RAW = 'https://raw.githubusercontent.com/Koaladeen/Experimental-5-axis-slicer/main/Stls/';
+
+let examplesCache = null; // null = not fetched, [] = fetched (may be empty)
+let examplesDropdownOpen = false;
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function positionExamplesDropdown() {
+  const btn = document.getElementById('btn-examples');
+  const dd = document.getElementById('examples-dropdown');
+  const rect = btn.getBoundingClientRect();
+  dd.style.top = (rect.bottom + 4) + 'px';
+  dd.style.left = rect.left + 'px';
+}
+
+function openExamplesDropdown() {
+  const dd = document.getElementById('examples-dropdown');
+  positionExamplesDropdown();
+  dd.classList.add('open');
+  examplesDropdownOpen = true;
+  document.getElementById('btn-examples').classList.add('active') ;
+  if (examplesCache === null) fetchExamplesList();
+}
+
+function closeExamplesDropdown() {
+  document.getElementById('examples-dropdown').classList.remove('open');
+  examplesDropdownOpen = false;
+  document.getElementById('btn-examples').classList.remove('active');
+}
+
+async function fetchExamplesList() {
+  const listEl = document.getElementById('ex-list');
+  const statusEl = document.getElementById('ex-status');
+  listEl.innerHTML = '<div style="padding:16px;font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center">Fetching list…</div>';
+
+  try {
+    const resp = await fetch(EXAMPLES_API);
+    if (!resp.ok) throw new Error(`GitHub API ${resp.status}: ${resp.statusText}`);
+    const files = await resp.json();
+
+    // Filter to .stl files only
+    const stls = files.filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.stl'));
+
+    if (stls.length === 0) {
+      listEl.innerHTML = '<div style="padding:16px;font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center">No STL files found.</div>';
+      examplesCache = [];
+      return;
+    }
+
+    examplesCache = stls;
+    renderExamplesList(stls);
+    statusEl.textContent = `${stls.length} file${stls.length !== 1 ? 's' : ''} · github.com/Koaladeen`;
+  } catch (err) {
+    listEl.innerHTML = `<div style="padding:16px;font-family:var(--mono);font-size:11px;color:var(--red);line-height:1.6">
+      Failed to load list.<br><span style="color:var(--text3)">${err.message}</span>
+    </div>`;
+    statusEl.textContent = 'Check network / API rate limit';
+    examplesCache = null; // allow retry
+  }
+}
+
+function renderExamplesList(stls) {
+  const listEl = document.getElementById('ex-list');
+  listEl.innerHTML = '';
+
+  stls.forEach(file => {
+    const div = document.createElement('div');
+    div.className = 'ex-item';
+    div.dataset.name = file.name;
+    div.dataset.url = file.download_url || (EXAMPLES_RAW + encodeURIComponent(file.name));
+
+    // Pick an icon by filename hints
+    const n = file.name.toLowerCase();
+    const icon = n.includes('benchy') ? '🚢' :
+                 n.includes('cube')   ? '🟦' :
+                 n.includes('sphere') ? '⚪' :
+                 n.includes('gear')   ? '⚙️'  :
+                 n.includes('vase')   ? '🏺' :
+                 n.includes('bracket')|| n.includes('mount') ? '🔩' :
+                 '◈';
+
+    div.innerHTML = `
+      <span class="ex-icon">${icon}</span>
+      <span class="ex-name">${file.name.replace(/\.stl$/i, '')}</span>
+      <span class="ex-size">${file.size ? formatBytes(file.size) : ''}</span>
+    `;
+
+    div.addEventListener('click', () => loadExampleSTL(file, div));
+    listEl.appendChild(div);
+  });
+}
+
+async function loadExampleSTL(file, itemEl) {
+  const statusEl = document.getElementById('ex-status');
+  itemEl.classList.add('loading');
+  itemEl.querySelector('.ex-name').textContent = 'Loading…';
+  statusEl.textContent = `Fetching ${file.name}…`;
+
+  try {
+    const url = file.download_url || (EXAMPLES_RAW + encodeURIComponent(file.name));
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const buffer = await resp.arrayBuffer();
+
+    // Load into slicer
+    loadSTL(buffer);
+    setStatus(`Loaded: ${file.name}`);
+    document.title = `5X·SLICER — ${file.name.replace(/\.stl$/i, '')}`;
+    closeExamplesDropdown();
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+    itemEl.classList.remove('loading');
+    // Restore name
+    itemEl.querySelector('.ex-name').textContent = file.name.replace(/\.stl$/i, '');
+  }
+}
+
+// ── Button wiring ─────────────────────────────────────
+document.getElementById('btn-examples').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (examplesDropdownOpen) closeExamplesDropdown();
+  else openExamplesDropdown();
+});
+
+document.getElementById('ex-close-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeExamplesDropdown();
+});
+
+// Close on outside click
+document.addEventListener('click', (e) => {
+  if (!examplesDropdownOpen) return;
+  const dd = document.getElementById('examples-dropdown');
+  const btn = document.getElementById('btn-examples');
+  if (!dd.contains(e.target) && !btn.contains(e.target)) closeExamplesDropdown();
+});
+
+// Reposition on resize
+window.addEventListener('resize', () => {
+  if (examplesDropdownOpen) positionExamplesDropdown();
+});
+
+// Mobile dock
+document.getElementById('mob-btn-examples').addEventListener('click', () => {
+  closeDrawer();
+  // On mobile open dropdown anchored near top-right
+  const dd = document.getElementById('examples-dropdown');
+  dd.style.top = '56px';
+  dd.style.left = '8px';
+  dd.style.right = '56px';
+  dd.style.maxWidth = 'none';
+  dd.classList.add('open');
+  examplesDropdownOpen = true;
+  if (examplesCache === null) fetchExamplesList();
+});
+
+
 loadUserMaterials();
 populateActiveMaterialSelect();
 
@@ -2851,6 +3476,18 @@ document.getElementById('mob-btn-clear').addEventListener('click', () => {
 document.getElementById('mob-btn-machine').addEventListener('click', () => {
   closeDrawer();
   openMachineOverlay();
+});
+document.getElementById('mob-btn-gcode').addEventListener('click', () => {
+  const gcode = generateGcode();
+  if (!gcode) return;
+  const blob = new Blob([gcode], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const matName = getMaterialById(activeMaterialId).name.replace(/[^a-zA-Z0-9_-]/g, '_');
+  a.download = `slice_${matName}.gcode`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  setStatus(`G-code exported · ${sliceData.length} layers`);
 });
 
 ['planes','mat','print','slicer'].forEach(id => {
